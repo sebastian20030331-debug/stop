@@ -28,12 +28,12 @@ function createRoom() {
 
     room = Math.random().toString(36).substring(2, 7).toUpperCase();
 
-    // Si el error es Firebase, esto soltará un error
     try {
         db.ref("rooms/" + room).set({
             host: player,
             status: "lobby",
-            stop: false
+            stop: false,
+            usedLetters: [] // Inicializamos la lista de letras usadas
         }).then(() => {
             db.ref("rooms/" + room + "/players/" + player).set(true);
             enterLobby();
@@ -116,10 +116,9 @@ function startGame() {
 
     roomRef.once('value').then((snapshot) => {
         const data = snapshot.val();
-        // Obtenemos las letras usadas o un array vacío si es la primera ronda
         let usedLetters = data.usedLetters || [];
 
-        // Filtramos: letras del abecedario que NO estén en usedLetters
+        // Filtramos: letras que NO estén en la lista de usadas
         let availableLetters = alphabet.filter(l => !usedLetters.includes(l));
 
         // Si se acabaron las letras, reiniciamos el ciclo
@@ -129,56 +128,20 @@ function startGame() {
             console.log("Abecedario completado. Reiniciando...");
         }
 
-        // Seleccionamos una letra al azar de las disponibles
+        // Seleccionamos una letra al azar
         let letter = availableLetters[Math.floor(Math.random() * availableLetters.length)];
-        
-        // Agregamos la nueva letra a la lista de usadas
         usedLetters.push(letter);
 
-        // Actualizamos Firebase con todos los campos necesarios
+        // Actualizamos Firebase
         roomRef.update({
             status: "playing",
             letter: letter,
-            usedLetters: usedLetters, // Guardamos la lista actualizada
+            usedLetters: usedLetters,
             stop: false,
             stopper: "",
             answers: null,
             evaluations: null,
             lastRoundPoints: null
-        });
-    });
-}
-function obtenerLetraSinRepetir() {
-    const salaRef = db.ref(`rooms/${room}`);
-
-    salaRef.once('value').then((snapshot) => {
-        const data = snapshot.val();
-        // Si no existe la lista de usadas, empezamos con un array vacío
-        let usadas = data.letrasUsadas || [];
-
-        // Filtramos el abecedario para quedarnos solo con las que NO han salido
-        let disponibles = abecedario.filter(letra => !usadas.includes(letra));
-
-        // Si ya no quedan letras disponibles, reiniciamos la lista
-        if (disponibles.length === 0) {
-            usadas = [];
-            disponibles = [...abecedario];
-            console.log("¡Ciclo completado! Reiniciando abecedario.");
-        }
-
-        // Elegimos una al azar de las que quedan
-        const indiceAleatorio = Math.floor(Math.random() * disponibles.length);
-        const letraSeleccionada = disponibles[indiceAleatorio];
-
-        // Agregamos la nueva letra a la lista de usadas
-        usadas.push(letraSeleccionada);
-
-        // Actualizamos Firebase: nueva letra, lista actualizada y estado de juego
-        salaRef.update({
-            currentLetter: letraSeleccionada,
-            letrasUsadas: usadas,
-            status: "playing",
-            stop: null // Limpiamos el stop de la ronda anterior
         });
     });
 }
@@ -214,11 +177,14 @@ function startTimer(time) {
     timerInterval = setInterval(() => {
         t--;
         document.getElementById("timer").innerText = t;
-        if (t <= 0 && !roundFinished) stopRound();
+        if (t <= 0 && !roundFinished) {
+            stopRound();
+        }
     }, 1000);
 }
 
 function stopRound() {
+    if (roundFinished) return;
     roundFinished = true;
     clearInterval(timerInterval);
     document.querySelectorAll("#game input").forEach(i => i.disabled = true);
@@ -252,7 +218,7 @@ function listenStop() {
             if (isHost) {
                 setTimeout(() => {
                     db.ref("rooms/" + room).update({ status: "review" });
-                }, 1500);
+                }, 2000);
             }
         }
     });
@@ -269,7 +235,6 @@ function submitAnswers() {
     db.ref("rooms/" + room + "/answers/" + player).set({ player, words: cats });
 }
 
-// --- REVISIÓN Y PUNTOS ---
 function showLiveReview() {
     document.getElementById("resultModal").classList.remove("hidden");
     document.getElementById("stopOverlay").classList.add("hidden");
@@ -284,17 +249,26 @@ function showLiveReview() {
         let html = '<div class="review-container">';
         for (let p in data.answers) {
             html += `<div class="player-review-block"><h4>👤 ${p}</h4>`;
+
             for (let cat in data.answers[p].words) {
                 let word = data.answers[p].words[cat] || "---";
                 let isValid = (data.evaluations?.[p]?.[cat] !== false);
-                html += `<div class="word-row">
-                    <span class="${isValid ? 'valid' : 'invalid'}"><b>${cat}:</b> ${word}</span>`;
-                if (isHost) html += `<button onclick="toggleWord('${p}', '${cat}', ${!isValid})">+/-</button>`;
-                html += `</div>`;
+
+                // Estructura limpia para Flexbox:
+                html += `
+                <div class="word-row">
+                    <span class="${isValid ? 'valid' : 'invalid'}">
+                        <b>${cat}:</b> ${word}
+                    </span>
+                    ${isHost ? `<button onclick="toggleWord('${p}', '${cat}', ${!isValid})">+/-</button>` : ''}
+                </div>`;
             }
             html += `</div>`;
         }
-        if (isHost) html += `<button class="finish-btn" onclick="calculateFinalPoints()">Finalizar Calificación</button>`;
+
+        if (isHost) {
+            html += `<button class="finish-btn" onclick="calculateFinalPoints()">Finalizar Calificación</button>`;
+        }
         document.getElementById("finalResults").innerHTML = html;
     });
 }
@@ -310,26 +284,49 @@ function calculateFinalPoints() {
         let wordCounts = {};
         let roundScores = {};
 
+        // 1. Contar palabras válidas para detectar repetidas
         for (let p in data.answers) {
             for (let cat in data.answers[p].words) {
                 let val = data.answers[p].words[cat].toLowerCase().trim();
                 let approved = (data.evaluations?.[p]?.[cat] !== false);
+
                 if (approved && val && val[0].toUpperCase() === letter) {
                     wordCounts[cat] = wordCounts[cat] || {};
                     wordCounts[cat][val] = (wordCounts[cat][val] || 0) + 1;
-                } else { data.answers[p].words[cat] = ""; }
+                }
             }
         }
 
+        // 2. Asignar puntajes individuales y totales
         for (let p in data.answers) {
-            let pts = 0;
+            let ptsTotal = 0;
+            let individualScores = {}; // Nuevo: para guardar el puntaje de cada palabra
+
             for (let cat in data.answers[p].words) {
-                let val = data.answers[p].words[cat].toLowerCase();
-                if (val) pts += (wordCounts[cat][val] > 1) ? 5 : 10;
+                let val = data.answers[p].words[cat].toLowerCase().trim();
+                let approved = (data.evaluations?.[p]?.[cat] !== false);
+                let wordPoints = 0;
+
+                if (approved && val && val[0].toUpperCase() === letter) {
+                    wordPoints = (wordCounts[cat][val] > 1) ? 5 : 10;
+                }
+
+                individualScores[cat] = wordPoints; // Guardamos el puntaje de la categoría
+                ptsTotal += wordPoints;
             }
-            roundScores[p] = pts;
+
+            // Guardamos ambos datos para el historial detallado
+            roundScores[p] = {
+                total: ptsTotal,
+                individual: individualScores
+            };
         }
-        db.ref("rooms/" + room).update({ status: "results", lastRoundPoints: roundScores });
+
+        // 3. Actualizar Firebase
+        db.ref("rooms/" + room).update({
+            status: "results",
+            lastRoundPoints: roundScores
+        });
     });
 }
 
@@ -337,15 +334,21 @@ function showFinalRanking() {
     db.ref("rooms/" + room + "/lastRoundPoints").once("value", snap => {
         let pts = snap.val() || {};
         let html = "";
-        Object.entries(pts).sort((a, b) => b[1] - a[1]).forEach(([n, s]) => {
-            html += `<p><b>${n}:</b> ${s} pts</p>`;
+        
+        // CORRECCIÓN: Ordenar y extraer el valor numérico .total
+        Object.entries(pts).sort((a, b) => {
+            const valA = (typeof a[1] === 'object') ? (a[1].total || 0) : a[1];
+            const valB = (typeof b[1] === 'object') ? (b[1].total || 0) : b[1];
+            return valB - valA;
+        }).forEach(([n, s]) => {
+            // Extraemos solo el número para mostrar en el modal
+            const finalPts = (typeof s === 'object') ? (s.total || 0) : s;
+            html += `<p style="color: white; margin: 10px 0;"><b>${n}:</b> ${finalPts} pts</p>`;
         });
 
         document.getElementById("finalResults").innerHTML = html;
         document.getElementById("modalTitle").innerText = "Resultados Ronda";
 
-        // --- AJUSTE AQUÍ ---
-        // Mostramos el botón azul solo al llegar a esta pantalla
         if (isHost) {
             document.getElementById("closeModalBtn").classList.remove("hidden");
         }
@@ -354,13 +357,29 @@ function showFinalRanking() {
 
 function closeResults() {
     if (!isHost) return;
-    db.ref("rooms/" + room + "/lastRoundPoints").once("value", snap => {
-        let pts = snap.val();
-        if (pts) {
-            for (let p in pts) {
-                db.ref("rooms/" + room + "/totals/" + p).transaction(c => (c || 0) + pts[p]);
+    db.ref("rooms/" + room).once("value", snap => {
+        const data = snap.val();
+        const roundData = data.lastRoundPoints; // Esto es { total: X, individual: {...} }
+        
+        if (roundData) {
+            // 1. Guardamos el objeto completo en el historial para el desglose
+            db.ref(`rooms/${room}/history`).push({
+                letter: data.letter,
+                details: data.answers,
+                evaluations: data.evaluations || {},
+                pointsWon: roundData
+            });
+
+            // 2. CORRECCIÓN CLAVE: Sumar solo el valor numérico al total acumulado
+            for (let p in roundData) {
+                // Extraemos el número .total. Si por error es un número viejo, lo usamos directo.
+                const puntosDeEstaRonda = (typeof roundData[p] === 'object') ? (roundData[p].total || 0) : roundData[p];
+                
+                db.ref("rooms/" + room + "/totals/" + p).transaction(current => (current || 0) + puntosDeEstaRonda);
             }
         }
+        
+        // 3. Limpiar estado de la sala
         db.ref("rooms/" + room).update({
             status: "waiting_next",
             stop: false,
@@ -372,43 +391,116 @@ function closeResults() {
 }
 
 function updateScoreBoard() {
-    db.ref("rooms/" + room + "/totals").on("value", snap => {
-        let html = "";
-        let totals = snap.val() || {};
-        Object.entries(totals).sort((a, b) => b[1] - a[1]).forEach(([n, p]) => {
-            html += `<div class="player-score"><b>${n}:</b> ${p} pts</div>`;
+    db.ref("rooms/" + room).on("value", snap => {
+        const data = snap.val();
+        if (!data) return;
+
+        const totals = data.totals || {};
+        const history = data.history || {};
+        const container = document.getElementById("totalPointsList");
+        container.innerHTML = "";
+
+        // Ordenar y mostrar
+        Object.entries(totals).sort((a, b) => {
+            const scoreA = (typeof a[1] === 'object') ? (a[1].total || 0) : a[1];
+            const scoreB = (typeof b[1] === 'object') ? (b[1].total || 0) : b[1];
+            return scoreB - scoreA;
+        }).forEach(([pName, totalData]) => {
+            
+            // CORRECCIÓN: Si totalData es el objeto erróneo, extraemos el número
+            const finalScore = (typeof totalData === 'object') ? (totalData.total || 0) : totalData;
+
+            const card = document.createElement("div");
+            card.className = "player-score-card";
+            card.innerHTML = `
+                <div class="score-header" onclick="toggleDetails(this)">
+                    <span>👤 ${pName}</span>
+                    <span>${finalScore} pts <small>▼</small></span>
+                </div>
+                <div class="score-details hidden">
+                    ${generateHistoryHTML(pName, history)}
+                </div>
+            `;
+            container.appendChild(card);
         });
-        document.getElementById("totalPointsList").innerHTML = html;
     });
 }
 
-// Función que abre el modal personalizado
+// --- SALIR DE LA SALA ---
 function leaveRoom() {
     document.getElementById("confirmModal").classList.remove("hidden");
 }
 
-// Función que cierra el modal si el usuario cancela
 function closeConfirmModal() {
     document.getElementById("confirmModal").classList.add("hidden");
 }
 
-// La lógica real de salida que se ejecuta al presionar "Salir ahora"
 function executeLeave() {
     if (!room || !player) return;
 
     db.ref(`rooms/${room}/players/${player}`).remove().then(() => {
-        // Apagar escuchadores
         db.ref(`rooms/${room}/players`).off();
         db.ref(`rooms/${room}/status`).off();
         db.ref(`rooms/${room}/stop`).off();
 
-        // Resetear interfaz
         room = "";
         document.getElementById("confirmModal").classList.add("hidden");
         document.getElementById("lobby").classList.add("hidden");
         document.getElementById("game").classList.add("hidden");
         document.getElementById("login").classList.remove("hidden");
-        
         document.getElementById("roomCode").value = "";
     });
+}
+
+function generateHistoryHTML(playerName, history) {
+    const rounds = Object.values(history);
+    if (rounds.length === 0) return "<p style='padding:10px; font-size:12px;'>No hay rondas registradas.</p>";
+
+    return rounds.map((round, idx) => {
+        // Obtenemos los datos de puntos del jugador en esta ronda
+        const roundData = round.pointsWon ? round.pointsWon[playerName] : null;
+        
+        // CORRECCIÓN: Extraer el total numérico con seguridad
+        let totalRound = 0;
+        if (roundData) {
+            totalRound = (typeof roundData === 'object') ? (roundData.total || 0) : roundData;
+        }
+
+        let itemsHtml = "";
+        const playerAnswers = round.details[playerName]?.words || {};
+
+        for (let cat in playerAnswers) {
+            const word = playerAnswers[cat] || "---";
+            const isValid = round.evaluations?.[playerName]?.[cat] !== false;
+            
+            // CORRECCIÓN: Extraer el puntaje individual de la categoría
+            let score = 0;
+            if (roundData && roundData.individual) {
+                score = roundData.individual[cat] || 0;
+            } else if (isValid && word !== "---") {
+                // Backup por si no se guardó el individual: asumimos 10 si es válido
+                score = 10; 
+            }
+
+            itemsHtml += `
+            <li class="${isValid ? 'valid-row' : 'line-through'}">
+                <span class="cat-name">${cat}:</span>
+                <span class="word-val">${word}</span>
+                <span class="word-score">${score} pts</span> 
+            </li>`;
+        }
+
+        return `
+        <div class="round-history-item">
+            <strong style="padding-left:15px; display:block; margin-bottom:5px; color: #fff;">
+                Ronda ${idx + 1} (Letra ${round.letter}): ${totalRound} pts
+            </strong>
+            <ul class="history-list">${itemsHtml}</ul>
+        </div>`;
+    }).join('');
+}
+
+function toggleDetails(element) {
+    const details = element.nextElementSibling;
+    details.classList.toggle("hidden");
 }
