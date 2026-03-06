@@ -64,12 +64,59 @@ button:active {
     display: none !important;
 }
 
+/* --- LOBBY Y CABECERA FLEXIBLE --- */
+.lobby-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #333;
+    padding-bottom: 15px;
+    gap: 10px; /* Espacio mínimo entre título y botón */
+}
+
+.lobby-header h2 {
+    margin: 0;
+    font-size: 28px;
+    text-align: left;
+    color: white;
+    white-space: nowrap; /* Evita que el título se parta en dos líneas */
+    overflow: hidden;
+    text-overflow: ellipsis; /* Si el nombre de sala es muy largo, pone puntos suspensivos */
+}
+
+#letter {
+    font-size: 40px; /* Tamaño ajustado para la cabecera */
+    color: #00ffcc;
+    text-shadow: 0 0 10px rgba(0, 255, 204, 0.3);
+    margin-left: 10px;
+}
+
+.leave-btn {
+    background: #333;
+    font-size: 14px;
+    padding: 10px 15px;
+    margin: 0;
+    flex-shrink: 0; /* Impide que el botón se achique */
+}
+
+.leave-btn:hover {
+    background: #ff4444;
+}
+
+.players-list {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 20px;
+    border: 1px solid #222;
+}
+
 /* --- DISEÑO DE CAMPOS (GRID RESPONSIVO) --- */
 .game-grid {
     display: grid;
     gap: 15px;
     margin: 20px 0;
-    /* En PC: 5 columnas */
     grid-template-columns: repeat(5, 1fr);
 }
 
@@ -88,11 +135,8 @@ button:active {
     letter-spacing: 1px;
 }
 
-/* --- CABECERA DE JUEGO --- */
-#letter {
-    font-size: 70px;
-    color: #00ffcc;
-    text-shadow: 0 0 15px rgba(0, 255, 204, 0.4);
+/* --- INFORMACIÓN DE PARTIDA --- */
+.game-info {
     margin: 10px 0;
 }
 
@@ -110,10 +154,6 @@ button:active {
     margin-top: 25px;
     padding: 20px;
     box-shadow: 0 5px 0 #990000;
-}
-
-.stop-btn:hover {
-    background: #cc0000;
 }
 
 .stop-btn:active {
@@ -160,7 +200,7 @@ button:active {
     color: #333;
 }
 
-/* --- ACCIONES POST-JUEGO (MESA) --- */
+/* --- ACCIONES POST-JUEGO --- */
 #postGameActions {
     background: rgba(0, 255, 204, 0.1);
     padding: 20px;
@@ -176,7 +216,7 @@ button:active {
     padding: 15px;
 }
 
-/* --- MARCADOR (SCOREBOARD) --- */
+/* --- MARCADOR --- */
 .scoreboard {
     margin-top: 40px;
     background: #1a1a1a;
@@ -225,35 +265,8 @@ button:active {
     border: 1px solid #444;
 }
 
-.player-review-block {
-    background: #252525;
-    margin-bottom: 15px;
-    padding: 15px;
-    border-radius: 12px;
-    border-left: 6px solid #00c3ff;
-    text-align: left;
-}
-
-.word-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin: 8px 0;
-    padding: 8px;
-    background: rgba(255, 255, 255, 0.03);
-    border-radius: 6px;
-}
-
-.valid {
-    color: #00ffcc;
-    font-weight: bold;
-}
-
-.invalid {
-    color: #ff4444;
-    text-decoration: line-through;
-    opacity: 0.5;
-}
+.valid { color: #00ffcc; font-weight: bold; }
+.invalid { color: #ff4444; text-decoration: line-through; opacity: 0.5; }
 
 /* --- ANIMACIONES --- */
 @keyframes shake {
@@ -281,21 +294,30 @@ button:active {
 
 /* Móviles */
 @media (max-width: 600px) {
+    .lobby-header h2 {
+        font-size: 20px; /* Título más pequeño en móvil */
+    }
+
+    #letter {
+        font-size: 30px; /* Letra más pequeña para que no empuje el botón */
+    }
+
+    .leave-btn {
+        padding: 8px 12px;
+        font-size: 12px;
+    }
+
     .game-grid {
-        grid-template-columns: 1fr; /* Una sola columna */
+        grid-template-columns: 1fr;
     }
 
     .shaking-text {
-        font-size: 50px;
+        font-size: 45px;
     }
 
     .modal-content {
         width: 95%;
-        padding: 15px;
-    }
-
-    #letter {
-        font-size: 50px;
+        padding: 20px;
     }
 
     .stop-banner {
