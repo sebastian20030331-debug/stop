@@ -1,47 +1,304 @@
-body{
-font-family:Arial;
-background:linear-gradient(135deg,#667eea,#764ba2);
-color:white;
-text-align:center;
-padding:20px;
+/* --- ESTILOS GENERALES --- */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #111;
+    color: white;
+    text-align: center;
+    margin: 0;
 }
 
-.container{
-background:white;
-color:black;
-max-width:700px;
-margin:auto;
-padding:25px;
-border-radius:12px;
+.container {
+    max-width: 900px;
+    margin: auto;
+    padding: 20px;
 }
 
-input{
-padding:10px;
-margin:5px;
-width:100%;
-max-width:120px;
+input {
+    padding: 12px;
+    margin: 5px 0;
+    border-radius: 8px;
+    background: #222;
+    color: white;
+    font-size: 16px;
+    border: 1px solid #444;
+    transition: 0.3s;
+    width: 100%;
+    box-sizing: border-box;
 }
 
-button{
-padding:10px 20px;
-margin:10px;
-cursor:pointer;
-background:#667eea;
-border:none;
-color:white;
-border-radius:8px;
+input:focus {
+    outline: none;
+    border-color: #00c3ff;
+    box-shadow: 0 0 8px rgba(0, 195, 255, 0.4);
 }
 
-table{
-width:100%;
-margin-top:20px;
+input:disabled {
+    background: #1a1a1a;
+    color: #666;
+    border: 1px solid #333;
+    cursor: not-allowed;
 }
 
-.hidden{
-display:none;
+button {
+    padding: 12px 20px;
+    margin: 5px;
+    border: none;
+    border-radius: 10px;
+    background: #00c3ff;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
 }
 
-#players{
-margin:10px;
-font-weight:bold;
+button:hover {
+    background: #0099cc;
+    transform: scale(1.05);
+}
+
+button:active {
+    transform: scale(0.95);
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* --- DISEÑO DE CAMPOS (GRID RESPONSIVO) --- */
+.game-grid {
+    display: grid;
+    gap: 15px;
+    margin: 20px 0;
+    /* En PC: 5 columnas */
+    grid-template-columns: repeat(5, 1fr);
+}
+
+.field-item {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+}
+
+.field-item label {
+    font-size: 12px;
+    color: #00ffcc;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+/* --- CABECERA DE JUEGO --- */
+#letter {
+    font-size: 70px;
+    color: #00ffcc;
+    text-shadow: 0 0 15px rgba(0, 255, 204, 0.4);
+    margin: 10px 0;
+}
+
+#timer {
+    font-size: 35px;
+    color: #ffcc00;
+    font-weight: bold;
+}
+
+/* --- BOTÓN STOP --- */
+.stop-btn {
+    background: #ff4444;
+    width: 100%;
+    font-size: 28px;
+    margin-top: 25px;
+    padding: 20px;
+    box-shadow: 0 5px 0 #990000;
+}
+
+.stop-btn:hover {
+    background: #cc0000;
+}
+
+.stop-btn:active {
+    box-shadow: 0 2px 0 #990000;
+    transform: translateY(3px);
+}
+
+/* --- CARTEL DE ALERTA STOP (OVERLAY) --- */
+.stop-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 0, 0, 0.9);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    animation: fadeIn 0.2s ease-in;
+}
+
+.stop-banner {
+    background: white;
+    padding: 40px 60px;
+    border-radius: 20px;
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+    color: black;
+    transform: rotate(-3deg);
+}
+
+.shaking-text {
+    font-size: 80px;
+    margin: 0;
+    color: #ff0000;
+    font-weight: 900;
+    animation: shake 0.5s infinite;
+}
+
+#whoStopped {
+    font-size: 24px;
+    font-weight: bold;
+    margin-top: 10px;
+    color: #333;
+}
+
+/* --- ACCIONES POST-JUEGO (MESA) --- */
+#postGameActions {
+    background: rgba(0, 255, 204, 0.1);
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 25px;
+    border: 2px dashed #00ffcc;
+}
+
+.finish-btn {
+    width: 100%;
+    background: #28a745;
+    font-size: 20px;
+    padding: 15px;
+}
+
+/* --- MARCADOR (SCOREBOARD) --- */
+.scoreboard {
+    margin-top: 40px;
+    background: #1a1a1a;
+    padding: 20px;
+    border-radius: 15px;
+    border: 1px solid #333;
+}
+
+#totalPointsList {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.player-score {
+    background: #252525;
+    padding: 10px 20px;
+    border-radius: 30px;
+    border: 1px solid #00c3ff;
+    font-weight: bold;
+}
+
+/* --- MODAL Y REVISIÓN --- */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.95);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+}
+
+.modal-content {
+    background: #1b1b1b;
+    padding: 30px;
+    border-radius: 20px;
+    width: 90%;
+    max-width: 550px;
+    max-height: 85vh;
+    overflow-y: auto;
+    border: 1px solid #444;
+}
+
+.player-review-block {
+    background: #252525;
+    margin-bottom: 15px;
+    padding: 15px;
+    border-radius: 12px;
+    border-left: 6px solid #00c3ff;
+    text-align: left;
+}
+
+.word-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 8px 0;
+    padding: 8px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 6px;
+}
+
+.valid {
+    color: #00ffcc;
+    font-weight: bold;
+}
+
+.invalid {
+    color: #ff4444;
+    text-decoration: line-through;
+    opacity: 0.5;
+}
+
+/* --- ANIMACIONES --- */
+@keyframes shake {
+    0% { transform: translate(1px, 1px) rotate(0deg); }
+    10% { transform: translate(-1px, -2px) rotate(-1deg); }
+    20% { transform: translate(-3px, 0px) rotate(1deg); }
+    30% { transform: translate(3px, 2px) rotate(0deg); }
+    40% { transform: translate(1px, -1px) rotate(1deg); }
+    50% { transform: translate(-1px, 2px) rotate(-1deg); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* --- MEDIA QUERIES (ADAPTACIÓN FINAL) --- */
+
+/* Tablets */
+@media (max-width: 900px) {
+    .game-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* Móviles */
+@media (max-width: 600px) {
+    .game-grid {
+        grid-template-columns: 1fr; /* Una sola columna */
+    }
+
+    .shaking-text {
+        font-size: 50px;
+    }
+
+    .modal-content {
+        width: 95%;
+        padding: 15px;
+    }
+
+    #letter {
+        font-size: 50px;
+    }
+
+    .stop-banner {
+        padding: 20px;
+    }
 }
