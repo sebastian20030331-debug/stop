@@ -19,7 +19,7 @@ let player = "";
 let isHost = false;
 let timerInterval;
 let roundFinished = false;
-const letters = "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ";
+const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
 // --- SALAS ---
 function createRoom() {
@@ -111,15 +111,75 @@ function listenGameStatus() {
 
 function startGame() {
     if (!isHost) return;
-    let letter = letters[Math.floor(Math.random() * letters.length)];
-    db.ref("rooms/" + room).update({
-        status: "playing",
-        letter: letter,
-        stop: false,
-        stopper: "",
-        answers: null,
-        evaluations: null,
-        lastRoundPoints: null
+
+    const roomRef = db.ref("rooms/" + room);
+
+    roomRef.once('value').then((snapshot) => {
+        const data = snapshot.val();
+        // Obtenemos las letras usadas o un array vacío si es la primera ronda
+        let usedLetters = data.usedLetters || [];
+
+        // Filtramos: letras del abecedario que NO estén en usedLetters
+        let availableLetters = alphabet.filter(l => !usedLetters.includes(l));
+
+        // Si se acabaron las letras, reiniciamos el ciclo
+        if (availableLetters.length === 0) {
+            usedLetters = [];
+            availableLetters = [...alphabet];
+            console.log("Abecedario completado. Reiniciando...");
+        }
+
+        // Seleccionamos una letra al azar de las disponibles
+        let letter = availableLetters[Math.floor(Math.random() * availableLetters.length)];
+        
+        // Agregamos la nueva letra a la lista de usadas
+        usedLetters.push(letter);
+
+        // Actualizamos Firebase con todos los campos necesarios
+        roomRef.update({
+            status: "playing",
+            letter: letter,
+            usedLetters: usedLetters, // Guardamos la lista actualizada
+            stop: false,
+            stopper: "",
+            answers: null,
+            evaluations: null,
+            lastRoundPoints: null
+        });
+    });
+}
+function obtenerLetraSinRepetir() {
+    const salaRef = db.ref(`rooms/${room}`);
+
+    salaRef.once('value').then((snapshot) => {
+        const data = snapshot.val();
+        // Si no existe la lista de usadas, empezamos con un array vacío
+        let usadas = data.letrasUsadas || [];
+
+        // Filtramos el abecedario para quedarnos solo con las que NO han salido
+        let disponibles = abecedario.filter(letra => !usadas.includes(letra));
+
+        // Si ya no quedan letras disponibles, reiniciamos la lista
+        if (disponibles.length === 0) {
+            usadas = [];
+            disponibles = [...abecedario];
+            console.log("¡Ciclo completado! Reiniciando abecedario.");
+        }
+
+        // Elegimos una al azar de las que quedan
+        const indiceAleatorio = Math.floor(Math.random() * disponibles.length);
+        const letraSeleccionada = disponibles[indiceAleatorio];
+
+        // Agregamos la nueva letra a la lista de usadas
+        usadas.push(letraSeleccionada);
+
+        // Actualizamos Firebase: nueva letra, lista actualizada y estado de juego
+        salaRef.update({
+            currentLetter: letraSeleccionada,
+            letrasUsadas: usadas,
+            status: "playing",
+            stop: null // Limpiamos el stop de la ronda anterior
+        });
     });
 }
 
@@ -319,5 +379,36 @@ function updateScoreBoard() {
             html += `<div class="player-score"><b>${n}:</b> ${p} pts</div>`;
         });
         document.getElementById("totalPointsList").innerHTML = html;
+    });
+}
+
+// Función que abre el modal personalizado
+function leaveRoom() {
+    document.getElementById("confirmModal").classList.remove("hidden");
+}
+
+// Función que cierra el modal si el usuario cancela
+function closeConfirmModal() {
+    document.getElementById("confirmModal").classList.add("hidden");
+}
+
+// La lógica real de salida que se ejecuta al presionar "Salir ahora"
+function executeLeave() {
+    if (!room || !player) return;
+
+    db.ref(`rooms/${room}/players/${player}`).remove().then(() => {
+        // Apagar escuchadores
+        db.ref(`rooms/${room}/players`).off();
+        db.ref(`rooms/${room}/status`).off();
+        db.ref(`rooms/${room}/stop`).off();
+
+        // Resetear interfaz
+        room = "";
+        document.getElementById("confirmModal").classList.add("hidden");
+        document.getElementById("lobby").classList.add("hidden");
+        document.getElementById("game").classList.add("hidden");
+        document.getElementById("login").classList.remove("hidden");
+        
+        document.getElementById("roomCode").value = "";
     });
 }
