@@ -2,73 +2,95 @@
 <html lang="es">
 
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>STOP Multijugador</title>
-
-<link rel="stylesheet" href="style.css">
-
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STOP Online</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 </head>
 
 <body>
+    <div class="container">
+        <h1> STOP Online</h1>
 
-<div class="container">
+        <div id="login">
+            <input id="playerName" placeholder="Tu nombre">
+            <button onclick="createRoom()">Crear Sala</button>
+            <hr>
+            <input id="roomCode" placeholder="Código de sala">
+            <button onclick="joinRoom()">Entrar</button>
+        </div>
 
-<h1>🎮 STOP Multijugador</h1>
+        <div id="lobby" class="hidden">
+            <h2>🏠 Sala: <span id="roomDisplay"></span></h2>
+            <div id="players"></div>
+            <button id="startBtn" class="hidden" onclick="startGame()">Iniciar Juego</button>
+        </div>
 
-<div id="login">
+        <div id="game" class="hidden">
+            <div class="game-header">
+                <h2>Letra: <span id="letter">---</span></h2>
+                <h3>Tiempo: <span id="timer">60</span></h3>
+            </div>
 
-<input id="playerName" placeholder="Tu nombre">
+            <div id="postGameActions" class="hidden">
+                <button class="finish-btn" onclick="restartGame()">🎮 ¡Jugar de Nuevo!</button>
+            </div>
 
-<input id="roomCode" placeholder="Código sala">
+            <div id="gameFields" class="game-grid">
+                <div class="field-item">
+                    <label>Nombre</label>
+                    <input id="catNombre" autocomplete="off" placeholder="...">
+                </div>
+                <div class="field-item">
+                    <label>País</label>
+                    <input id="catPais" autocomplete="off" placeholder="...">
+                </div>
+                <div class="field-item">
+                    <label>Animal</label>
+                    <input id="catAnimal" autocomplete="off" placeholder="...">
+                </div>
+                <div class="field-item">
+                    <label>Fruta</label>
+                    <input id="catFruta" autocomplete="off" placeholder="...">
+                </div>
+                <div class="field-item">
+                    <label>Color</label>
+                    <input id="catColor" autocomplete="off" placeholder="...">
+                </div>
+            </div>
 
-<button onclick="joinRoom()">Entrar a la sala</button>
+            <button id="stopBtnAction" class="stop-btn" onclick="stopRound()">¡STOP!</button>
 
-</div>
+            <div id="scoreBoard" class="scoreboard">
+                <h4>🏆 Puntos Acumulados</h4>
+                <div id="totalPointsList"></div>
+            </div>
+        </div>
 
+        <div id="resultModal" class="modal hidden">
+            <div class="modal-content">
+                <h2 id="modalTitle">🏆 Resultados</h2>
+                <div id="finalResults"></div>
+                <hr>
+                <button id="closeModalBtn" class="finish-btn hidden" style="background:#00c3ff;"
+                    onclick="closeResults()">
+                    Cerrar y volver a la mesa
+                </button>
+                <p id="waitMsg" class="wait-text">Esperando al anfitrión...</p>
+            </div>
+        </div>
 
-<div id="game" class="hidden">
+        <div id="stopOverlay" class="stop-overlay hidden">
+            <div class="stop-banner">
+                <h1 class="shaking-text">🛑 ¡STOP! 🛑</h1>
+                <p id="whoStopped">Alguien detuvo el juego...</p>
+            </div>
+        </div>
+    </div>
 
-<h2>Letra: <span id="letter"></span></h2>
-
-<h3>Tiempo: <span id="timer">60</span></h3>
-
-<div id="players"></div>
-
-<table>
-
-<tr>
-<th>Nombre</th>
-<th>País</th>
-<th>Animal</th>
-<th>Fruta</th>
-<th>Color</th>
-</tr>
-
-<tr>
-
-<td><input id="catNombre"></td>
-<td><input id="catPais"></td>
-<td><input id="catAnimal"></td>
-<td><input id="catFruta"></td>
-<td><input id="catColor"></td>
-
-</tr>
-
-</table>
-
-<button onclick="stopRound()">STOP</button>
-
-</div>
-
-<div id="results"></div>
-
-</div>
-
-<script src="app.js"></script>
-
+    <script src="app.js"></script>
 </body>
+
 </html>
