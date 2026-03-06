@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>STOP Multijugador</title>
+
+<link rel="stylesheet" href="style.css">
+
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>🎮 STOP Multijugador</h1>
+
+<div id="login">
+
+<input id="playerName" placeholder="Tu nombre">
+
+<input id="roomCode" placeholder="Código sala">
+
+<button onclick="joinRoom()">Entrar a la sala</button>
+
+</div>
+
+
+<div id="game" class="hidden">
+
+<h2>Letra: <span id="letter"></span></h2>
+
+<h3>Tiempo: <span id="timer">60</span></h3>
+
+<div id="players"></div>
+
+<table>
+
+<tr>
+<th>Nombre</th>
+<th>País</th>
+<th>Animal</th>
+<th>Fruta</th>
+<th>Color</th>
+</tr>
+
+<tr>
+
+<td><input id="catNombre"></td>
+<td><input id="catPais"></td>
+<td><input id="catAnimal"></td>
+<td><input id="catFruta"></td>
+<td><input id="catColor"></td>
+
+</tr>
+
+</table>
+
+<button onclick="stopRound()">STOP</button>
+
+</div>
+
+<div id="results"></div>
+
+</div>
+
+<script src="app.js"></script>
+
+</body>
+</html>
