@@ -8,7 +8,6 @@ const firebaseConfig = {
     appId: "1:214107973500:web:230316d4f6a553529c26f9"
 };
 
-// Inicialización segura
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
@@ -21,39 +20,50 @@ let timerInterval;
 let roundFinished = false;
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
-// --- SALAS ---
+// --- 1. FUNCIÓN CREAR SALA (CORREGIDA) ---
 function createRoom() {
     player = document.getElementById("playerName").value.trim();
-    if (!player) return alert("Escribe tu nombre");
+    if (!player) return showAlert("⚠️ Escribe tu nombre para crear la sala");
 
+    // Generar código único
     room = Math.random().toString(36).substring(2, 7).toUpperCase();
+    isHost = true; 
 
-    try {
-        db.ref("rooms/" + room).set({
-            host: player,
-            status: "lobby",
-            stop: false,
-            usedLetters: [] // Inicializamos la lista de letras usadas
-        }).then(() => {
-            db.ref("rooms/" + room + "/players/" + player).set(true);
+    const roomData = {
+        host: player,
+        admin: player,
+        status: "lobby",
+        stop: false,
+        usedLetters: [],
+        players: {
+            [player]: true
+        }
+    };
+
+    // Guardar todo de un solo golpe para evitar errores de sincronización
+    db.ref("rooms/" + room).set(roomData)
+        .then(() => {
             enterLobby();
-        }).catch(err => {
-            alert("ERROR DE FIREBASE: " + err.message);
+        })
+        .catch(err => {
+            showAlert("❌ ERROR DE FIREBASE: " + err.message);
         });
-    } catch (e) {
-        alert("ERROR CRÍTICO: " + e.message);
-    }
 }
 
+// --- 2. FUNCIÓN UNIRSE A SALA ---
 function joinRoom() {
     player = document.getElementById("playerName").value.trim();
     room = document.getElementById("roomCode").value.toUpperCase().trim();
-    if (!player || !room) return alert("Completa nombre y código");
+    
+    if (!player || !room) return showAlert("⚠️ Completa nombre y código");
 
     db.ref("rooms/" + room).once("value", snap => {
-        if (!snap.exists()) return alert("La sala no existe");
-        db.ref("rooms/" + room + "/players/" + player).set(true);
-        enterLobby();
+        if (!snap.exists()) return showAlert("⚠️ La sala no existe");
+        
+        isHost = false;
+        // Agregamos al jugador a la lista
+        db.ref("rooms/" + room + "/players/" + player).set(true)
+            .then(() => enterLobby());
     });
 }
 
@@ -66,22 +76,59 @@ function enterLobby() {
     listenGameStatus();
     updateScoreBoard();
 
-    db.ref("rooms/" + room + "/host").once("value", snap => {
+    // Verificamos si somos el host para mostrar el botón de inicio
+    db.ref("rooms/" + room + "/host").on("value", snap => {
         isHost = (player === snap.val());
-        document.getElementById("startBtn").classList.toggle("hidden", !isHost);
+        const startBtn = document.getElementById("startBtn");
+        if (startBtn) {
+            startBtn.classList.toggle("hidden", !isHost);
+        }
     });
 }
 
 function listenPlayers() {
     db.ref("rooms/" + room + "/players").on("value", snap => {
-        let players = snap.val();
+        const players = snap.val() || {};
         let html = "<h3>👥 Jugadores</h3>";
-        for (let p in players) html += `<p>${p}</p>`;
+        for (let p in players) {
+            html += `<p>${p} ${p === player ? '<b>(Tú)</b>' : ''}</p>`;
+        }
         document.getElementById("players").innerHTML = html;
     });
 }
 
-// --- FLUJO DE JUEGO ---
+// --- 3. LÓGICA DE ENVÍO (7 CAMPOS) ---
+function submitAnswers() {
+    const cats = {
+        nombre: document.getElementById("catNombre").value.trim(),
+        apellido: document.getElementById("catApellido").value.trim(),
+        ciudad: document.getElementById("catCiudad").value.trim(),
+        animal: document.getElementById("catAnimal").value.trim(),
+        fruta: document.getElementById("catFruta").value.trim(),
+        color: document.getElementById("catColor").value.trim(),
+        cosa: document.getElementById("catCosa").value.trim()
+    };
+    db.ref("rooms/" + room + "/answers/" + player).set({ player, words: cats });
+}
+
+// --- 4. ALERTAS PERSONALIZADAS ---
+function showAlert(message) {
+    const alertOverlay = document.getElementById("customAlert");
+    const msgElem = document.getElementById("alertMessage");
+    if (alertOverlay && msgElem) {
+        msgElem.innerText = message;
+        alertOverlay.classList.remove("hidden");
+    } else {
+        alert(message); // Fallback
+    }
+}
+
+function closeAlert() {
+    const alertOverlay = document.getElementById("customAlert");
+    if (alertOverlay) alertOverlay.classList.add("hidden");
+}
+
+// --- 5. LISTENERS DE ESTADO (Para que el juego avance) ---
 function listenGameStatus() {
     db.ref("rooms/" + room + "/status").on("value", snap => {
         const status = snap.val();
@@ -89,25 +136,27 @@ function listenGameStatus() {
 
         if (status === "playing") {
             startRound();
-            document.getElementById("postGameActions").classList.add("hidden");
-            document.getElementById("stopBtnAction").classList.remove("hidden");
-        }
-        else if (status === "review") {
+        } else if (status === "review") {
             showLiveReview();
-        }
-        else if (status === "results") {
+        } else if (status === "results") {
             showFinalRanking();
-        }
-        else if (status === "waiting_next") {
-            document.getElementById("resultModal").classList.add("hidden");
-            document.getElementById("game").classList.remove("hidden");
-            document.getElementById("lobby").classList.add("hidden");
-            document.getElementById("stopBtnAction").classList.add("hidden");
-            document.getElementById("stopOverlay").classList.add("hidden");
-            if (isHost) document.getElementById("postGameActions").classList.remove("hidden");
+        } else if (status === "waiting_next") {
+            resetUIForNextRound();
         }
     });
 }
+
+function resetUIForNextRound() {
+    document.getElementById("resultModal").classList.add("hidden");
+    document.getElementById("game").classList.remove("hidden");
+    document.getElementById("lobby").classList.add("hidden");
+    document.getElementById("stopBtnAction").classList.add("hidden");
+    document.getElementById("stopOverlay").classList.add("hidden");
+    if (isHost) document.getElementById("postGameActions").classList.remove("hidden");
+}
+
+// ... (El resto de tus funciones como startGame, startTimer, stopRound se mantienen igual)
+// Asegúrate de NO repetir las funciones al final del archivo.
 
 function startGame() {
     if (!isHost) return;
@@ -515,23 +564,4 @@ function showAlert(message) {
 // Función para cerrar la alerta con el botón OK
 function closeAlert() {
     document.getElementById("customAlert").classList.add("hidden");
-}
-
-// --- ACTUALIZACIÓN DE TUS FUNCIONES DE LOGUEO ---
-function createRoom() {
-    player = document.getElementById("playerName").value.trim();
-    if (!player) return showAlert("Debes escribir tu nombre para crear una sala.");
-
-    // ... resto de tu código
-}
-
-function joinRoom() {
-    player = document.getElementById("playerName").value.trim();
-    room = document.getElementById("roomCode").value.toUpperCase().trim();
-    if (!player || !room) return showAlert("Completa tu nombre y el código de la sala.");
-
-    db.ref("rooms/" + room).once("value", snap => {
-        if (!snap.exists()) return showAlert("La sala '" + room + "' no existe. Verifica el código.");
-        // ... resto de tu código
-    });
 }
