@@ -11,7 +11,22 @@ const firebaseConfig = {
 if (!firebase.apps.length) {
     firebase.initializeApp(firebaseConfig);
 }
+
 const db = firebase.database();
+
+document.addEventListener("DOMContentLoaded", () => {
+    // Buscamos todos los inputs
+    const inputs = document.querySelectorAll('input');
+    
+    inputs.forEach(input => {
+        // Usamos 'new-password' porque Chrome respeta más este valor para no sugerir nada
+        input.setAttribute('autocomplete', 'new-password');
+        input.setAttribute('spellcheck', 'false');
+        input.setAttribute('autocorrect', 'off');
+    });
+});
+
+// --- TUS FUNCIONES (createRoom, joinRoom, etc.) ---
 
 let room = "";
 let player = "";
@@ -271,17 +286,6 @@ function listenStop() {
             }
         }
     });
-}
-
-function submitAnswers() {
-    const cats = {
-        nombre: document.getElementById("catNombre").value.trim(),
-        pais: document.getElementById("catPais").value.trim(),
-        animal: document.getElementById("catAnimal").value.trim(),
-        fruta: document.getElementById("catFruta").value.trim(),
-        color: document.getElementById("catColor").value.trim()
-    };
-    db.ref("rooms/" + room + "/answers/" + player).set({ player, words: cats });
 }
 
 function showLiveReview() {
@@ -565,3 +569,4 @@ function showAlert(message) {
 function closeAlert() {
     document.getElementById("customAlert").classList.add("hidden");
 }
+
