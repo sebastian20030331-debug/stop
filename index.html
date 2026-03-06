@@ -51,23 +51,38 @@
             <div id="gameFields" class="game-grid">
                 <div class="field-item">
                     <label>Nombre</label>
-                    <input id="catNombre" autocomplete="off" placeholder="...">
+                    <input id="catNombre" name="n_xyz_1" type="text" autocomplete="off" readonly
+                        onfocus="this.removeAttribute('readonly');">
                 </div>
                 <div class="field-item">
-                    <label>País</label>
-                    <input id="catPais" autocomplete="off" placeholder="...">
+                    <label>Apellido</label>
+                    <input id="catApellido" name="a_xyz_2" type="text" autocomplete="off" readonly
+                        onfocus="this.removeAttribute('readonly');">
+                </div>
+                <div class="field-item">
+                    <label>Ciudad</label>
+                    <input id="catCiudad" name="n_xyz_1" type="text" autocomplete="off" readonly
+                        onfocus="this.removeAttribute('readonly');">
                 </div>
                 <div class="field-item">
                     <label>Animal</label>
-                    <input id="catAnimal" autocomplete="off" placeholder="...">
+                    <input id="catAnimal" name="a_xyz_2" type="text" autocomplete="off" readonly
+                        onfocus="this.removeAttribute('readonly');">
                 </div>
                 <div class="field-item">
                     <label>Fruta</label>
-                    <input id="catFruta" autocomplete="off" placeholder="...">
+                    <input id="catFruta" name="n_xyz_1" type="text" autocomplete="off" readonly
+                        onfocus="this.removeAttribute('readonly');">
                 </div>
                 <div class="field-item">
                     <label>Color</label>
-                    <input id="catColor" autocomplete="off" placeholder="...">
+                    <input id="catColor" name="a_xyz_2" type="text" autocomplete="off" readonly
+                        onfocus="this.removeAttribute('readonly');">
+                </div>
+                <div class="field-item">
+                    <label>Cosa</label>
+                    <input id="catCosa" name="n_xyz_1" type="text" autocomplete="off" readonly
+                        onfocus="this.removeAttribute('readonly');">
                 </div>
             </div>
 
@@ -116,7 +131,7 @@
 
 <div id="customAlert" class="alert-overlay hidden">
     <div class="player-score-card alert-centered-card">
-    
+
         <div class="alert-body">
             <p id="alertMessage">Mensaje de error aquí</p>
             <button class="stop-btn" style="width: 100%; margin-top: 15px;" onclick="closeAlert()">OK</button>
