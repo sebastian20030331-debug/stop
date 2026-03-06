@@ -504,3 +504,34 @@ function toggleDetails(element) {
     const details = element.nextElementSibling;
     details.classList.toggle("hidden");
 }
+
+// Función para mostrar la alerta fija
+function showAlert(message) {
+    const alertOverlay = document.getElementById("customAlert");
+    document.getElementById("alertMessage").innerText = message;
+    alertOverlay.classList.remove("hidden");
+}
+
+// Función para cerrar la alerta con el botón OK
+function closeAlert() {
+    document.getElementById("customAlert").classList.add("hidden");
+}
+
+// --- ACTUALIZACIÓN DE TUS FUNCIONES DE LOGUEO ---
+function createRoom() {
+    player = document.getElementById("playerName").value.trim();
+    if (!player) return showAlert("Debes escribir tu nombre para crear una sala.");
+
+    // ... resto de tu código
+}
+
+function joinRoom() {
+    player = document.getElementById("playerName").value.trim();
+    room = document.getElementById("roomCode").value.toUpperCase().trim();
+    if (!player || !room) return showAlert("Completa tu nombre y el código de la sala.");
+
+    db.ref("rooms/" + room).once("value", snap => {
+        if (!snap.exists()) return showAlert("La sala '" + room + "' no existe. Verifica el código.");
+        // ... resto de tu código
+    });
+}
