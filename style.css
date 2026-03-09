@@ -1,12 +1,11 @@
-/* --- 1. ESTILOS BASE Y RESET --- */
+/* --- ESTILOS GENERALES --- */
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: #0d0d0d;
+    background: #111;
     color: white;
     text-align: center;
     margin: 0;
-    overflow-x: hidden;
 }
 
 .container {
@@ -15,16 +14,14 @@ body {
     padding: 20px;
 }
 
-/* --- 2. INPUTS Y BOTONES --- */
-
 input {
     padding: 12px;
     margin: 5px 0;
     border-radius: 8px;
-    background: #1a1a1a;
+    background: #222;
     color: white;
     font-size: 16px;
-    border: 1px solid #333;
+    border: 1px solid #444;
     transition: 0.3s;
     width: 100%;
     box-sizing: border-box;
@@ -33,7 +30,14 @@ input {
 input:focus {
     outline: none;
     border-color: #00c3ff;
-    box-shadow: 0 0 10px rgba(0, 195, 255, 0.3);
+    box-shadow: 0 0 8px rgba(0, 195, 255, 0.4);
+}
+
+input:disabled {
+    background: #1a1a1a;
+    color: #666;
+    border: 1px solid #333;
+    cursor: not-allowed;
 }
 
 button {
@@ -61,52 +65,8 @@ button:active {
     display: none !important;
 }
 
-/* --- FIX ESPECÍFICO PARA EL MODAL --- */
-/* --- ESTILO ESPECÍFICO PARA EL MODAL DE SALIDA --- */
-/* El fondo: Oculto por defecto, centrado total al activarse */
-#confirmModal.modal {
-    display: none; /* Se oculta por defecto */
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: 100vw !important;
-    height: 100vh !important;
-    background: rgba(0, 0, 0, 0.9) !important;
-    z-index: 10000 !important;
-    justify-content: center !important;
-    align-items: center !important;
-    border: none !important;
-}
+/* --- LOBBY Y CABECERA FLEXIBLE --- */
 
-/* Solo se muestra cuando JS le quita la clase .hidden */
-#confirmModal:not(.hidden) {
-    display: flex !important;
-}
-
-/* La tarjeta: Tamaño controlado para evitar que se vea como en tus capturas anteriores */
-#confirmModal .modal-content {
-    background: #1b1b1b !important;
-    padding: 30px !important;
-    border-radius: 20px !important;
-    width: 350px !important;
-    max-width: 90% !important;
-    border: 1px solid #333 !important;
-    text-align: center !important;
-    box-shadow: 0 10px 50px rgba(0,0,0,0.8) !important;
-    transform: none !important;
-    margin: 0 !important;
-}
-
-/* Botones internos: Evitamos que hereden el tamaño del botón STOP */
-#confirmModal .modal-content button {
-    width: 120px !important;
-    height: 45px !important;
-    margin: 10px 5px !important;
-    font-size: 16px !important;
-    display: inline-block !important;
-}
-
-/* --- 4. CABECERA Y LOBBY --- */
 .lobby-header {
     display: flex;
     justify-content: space-between;
@@ -115,34 +75,57 @@ button:active {
     border-bottom: 1px solid #333;
     padding-bottom: 15px;
     gap: 10px;
+    /* Espacio mínimo entre título y botón */
 }
 
 .lobby-header h2 {
     margin: 0;
-    font-size: 26px;
+    font-size: 28px;
+    text-align: left;
     color: white;
+    white-space: nowrap;
+    /* Evita que el título se parta en dos líneas */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    /* Si el nombre de sala es muy largo, pone puntos suspensivos */
 }
 
 #letter {
-    font-size: 45px;
+    font-size: 40px;
+    /* Tamaño ajustado para la cabecera */
     color: #00ffcc;
-    text-shadow: 0 0 15px rgba(0, 255, 204, 0.4);
-    font-weight: 900;
+    text-shadow: 0 0 10px rgba(0, 255, 204, 0.3);
+    margin-left: 10px;
 }
 
 .leave-btn {
-    background: #2a2a2a;
+    background: #333;
     font-size: 14px;
+    padding: 10px 15px;
+    margin: 0;
+    flex-shrink: 0;
+    /* Impide que el botón se achique */
 }
 
-.leave-btn:hover { background: #ff4444; }
+.leave-btn:hover {
+    background: #ff4444;
+}
 
-/* --- 5. GRID DE JUEGO --- */
+.players-list {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 20px;
+    border: 1px solid #222;
+}
+
+/* --- DISEÑO DE CAMPOS (GRID RESPONSIVO) --- */
+
 .game-grid {
     display: grid;
     gap: 15px;
     margin: 20px 0;
-    grid-template-columns: repeat(4, 1fr); /* Ajustado para mejor balance */
+    grid-template-columns: repeat(5, 1fr);
 }
 
 .field-item {
@@ -157,127 +140,415 @@ button:active {
     text-transform: uppercase;
     margin-bottom: 5px;
     font-weight: bold;
+    letter-spacing: 1px;
 }
 
-/* --- 6. BOTÓN STOP Y OVERLAY --- */
+/* --- INFORMACIÓN DE PARTIDA --- */
+
+.game-info {
+    margin: 10px 0;
+}
+
+#timer {
+    font-size: 35px;
+    color: #ffcc00;
+    font-weight: bold;
+}
+
+/* --- BOTÓN STOP --- */
+
 .stop-btn {
     background: #ff4444;
     width: 100%;
-    font-size: 30px;
+    font-size: 28px;
     margin-top: 25px;
     padding: 20px;
-    box-shadow: 0 6px 0 #990000;
-    font-weight: 900;
+    box-shadow: 0 5px 0 #990000;
 }
 
 .stop-btn:active {
     box-shadow: 0 2px 0 #990000;
-    transform: translateY(4px);
+    transform: translateY(3px);
+}
+
+/* --- CARTEL DE ALERTA STOP (OVERLAY) --- */
+
+.stop-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 0, 0, 0.9);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    animation: fadeIn 0.2s ease-in;
 }
 
 .stop-banner {
     background: white;
-    padding: 40px;
-    border-radius: 30px;
+    padding: 40px 60px;
+    border-radius: 20px;
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
     color: black;
-    transform: rotate(-2deg);
-    text-align: center;
+    transform: rotate(-3deg);
 }
 
 .shaking-text {
-    font-size: 70px;
+    font-size: 80px;
     margin: 0;
     color: #ff0000;
     font-weight: 900;
-    animation: shake 0.4s infinite;
+    animation: shake 0.5s infinite;
 }
 
+#whoStopped {
+    font-size: 24px;
+    font-weight: bold;
+    margin-top: 10px;
+    color: #333;
+}
 
+/* --- ACCIONES POST-JUEGO --- */
 
-/* --- 7. MARCADOR Y DESGLOSE --- */
+#postGameActions {
+    background: rgba(0, 255, 204, 0.1);
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 25px;
+    border: 2px dashed #00ffcc;
+}
+
+.finish-btn {
+    width: 100%;
+    background: #28a745;
+    font-size: 20px;
+    padding: 15px;
+}
+
+/* --- MARCADOR --- */
+
 .scoreboard {
     margin-top: 40px;
-    background: #151515;
+    background: #1a1a1a;
     padding: 20px;
     border-radius: 15px;
+    border: 1px solid #333;
+}
+
+#totalPointsList {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.player-score {
+    background: #252525;
+    padding: 10px 20px;
+    border-radius: 30px;
+    border: 1px solid #00c3ff;
+    font-weight: bold;
+}
+
+/* --- MODAL Y REVISIÓN --- */
+
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.95);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+}
+
+.modal-content {
+    background: #1b1b1b;
+    padding: 30px;
+    border-radius: 20px;
+    width: 90%;
+    max-width: 550px;
+    max-height: 85vh;
+    overflow-y: auto;
+    border: 1px solid #444;
+}
+
+.valid {
+    color: #00ffcc;
+    font-weight: bold;
+}
+
+.invalid {
+    color: #ff4444;
+    text-decoration: line-through;
+    opacity: 0.5;
 }
 
 .player-score-card {
     background: #222;
-    border: 1px solid #333;
-    border-radius: 12px;
-    margin-bottom: 10px;
+    border: 1px solid #444;
+    border-radius: 10px;
+    margin-bottom: 8px;
     width: 100%;
     overflow: hidden;
 }
 
 .score-header {
-    padding: 15px 20px;
+    padding: 15px;
+    background: #252525;
     display: flex;
     justify-content: space-between;
-    align-items: center;
     cursor: pointer;
-    background: #282828;
-    border-left: 5px solid #00c3ff;
-    transition: background 0.2s;
+    font-weight: bold;
+    border-left: 4px solid #00c3ff;
 }
 
-.score-header:hover { background: #353535; }
+.score-header:hover {
+    background: #333;
+}
+
+.score-details {
+    padding: 10px;
+    background: #1a1a1a;
+    text-align: left;
+    border-top: 1px solid #333;
+}
+
+.round-history-item {
+    border-bottom: 1px solid #333;
+    padding: 8px 0;
+}
+
+.round-history-item ul {
+    margin: 5px 0;
+    padding-left: 20px;
+    font-size: 13px;
+    color: #bbb;
+}
+
+.line-through {
+    text-decoration: line-through;
+    color: #ff4444;
+}
+
+/* --- AJUSTE DE ALINEACIÓN EN REVISIÓN --- */
+
+.word-row {
+    display: flex;
+    /* Convierte la fila en un contenedor flexible */
+    justify-content: space-between;
+    /* Empuja el texto a la izquierda y el botón a la derecha */
+    align-items: center;
+    /* Centra verticalmente el texto con el botón */
+    padding: 10px;
+    margin-bottom: 5px;
+    background: rgba(255, 255, 255, 0.05);
+    /* Un fondo sutil para separar filas */
+    border-radius: 8px;
+    text-align: left;
+    /* Asegura que el texto interno empiece a la izquierda */
+}
+
+.word-row span {
+    flex-grow: 1;
+    /* El texto toma todo el espacio disponible */
+    margin-right: 15px;
+    /* Espacio de seguridad antes del botón */
+}
+
+.word-row button {
+    margin: 0;
+    /* Quita márgenes extra para que no se desplace */
+    flex-shrink: 0;
+    /* Evita que el botón se haga pequeño si el texto es largo */
+    min-width: 60px;
+    /* Tamaño fijo para el botón +/- */
+}
+
+/* Contenedor de la lista en el desplegable */
 
 .history-list {
     list-style: none;
-    padding: 15px;
+    padding: 10px 15px;
     margin: 0;
-    background: #181818;
 }
+
+/* --- ESTILO DE HISTORIAL LIMPIO --- */
 
 .history-list li {
     display: flex;
     justify-content: space-between;
-    padding: 8px 0;
-    border-bottom: 1px solid #252525;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.cat-name { color: #888; font-size: 13px; font-weight: bold; width: 80px; text-align: left; }
+/* Palabras Correctas: Todo en Blanco */
 
-.word-val { flex-grow: 1; text-align: left; color: #fff; }
+.cat-name {
+    color: #ffffff;
+    /* Blanco puro */
+    font-size: 0.9em;
+    width: 85px;
+    text-align: left;
+    font-weight: bold;
+}
 
-.word-score { color: #00ffcc; font-weight: bold; }
+.word-val {
+    flex-grow: 1;
+    text-align: left;
+    padding-left: 10px;
+    color: #ffffff;
+    /* Blanco puro */
+}
 
-/* Palabras tachadas */
+/* Puntos: Sin corchetes y en color neón */
 
-.line-through .word-val, .line-through .cat-name {
+.word-score {
+    font-weight: bold;
+    color: #00ffcc;
+    min-width: 70px;
+    text-align: right;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+/* --- Palabras Incorrectas/Anuladas --- */
+
+.line-through .cat-name,
+
+.line-through .word-val {
     text-decoration: line-through;
-    color: #ff4444 !important;
-    opacity: 0.6;
+    color: #ff4444;
+    /* Rojo para lo que no vale */
+    opacity: 0.7;
 }
 
-.line-through .word-score { color: #ff4444; }
+.line-through .word-score {
+    color: #ff4444;
+    text-decoration: line-through;
+}
 
-/* --- 8. ANIMACIONES --- */
+/* --- ALERTA CENTRAL FIJA --- */
+
+.alert-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    /* Oscurece el fondo */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    transition: opacity 0.3s ease;
+}
+
+.alert-centered-card {
+    width: 90%;
+    max-width: 350px;
+    border: 2px solid #00ffcc !important;
+    /* Borde neón */
+    box-shadow: 0 0 20px rgba(0, 255, 204, 0.4);
+}
+
+.alert-body {
+    padding: 20px;
+    background: #111;
+    text-align: center;
+    color: white;
+}
+
+.alert-overlay.hidden {
+    display: none;
+    opacity: 0;
+}
+
+/* --- ANIMACIONES --- */
 
 @keyframes shake {
-    0% { transform: translate(1px, 1px) rotate(0deg); }
-    25% { transform: translate(-2px, -1px) rotate(-1deg); }
-    50% { transform: translate(-3px, 1px) rotate(1deg); }
-    75% { transform: translate(2px, 2px) rotate(0deg); }
-    100% { transform: translate(1px, -1px) rotate(1deg); }
+
+    0% {
+        transform: translate(1px, 1px) rotate(0deg);
+    }
+
+    10% {
+        transform: translate(-1px, -2px) rotate(-1deg);
+    }
+
+    20% {
+        transform: translate(-3px, 0px) rotate(1deg);
+    }
+
+    30% {
+        transform: translate(3px, 2px) rotate(0deg);
+    }
+
+    40% {
+        transform: translate(1px, -1px) rotate(1deg);
+    }
+
+    50% {
+        transform: translate(-1px, 2px) rotate(-1deg);
+    }
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: scale(0.9); }
-    to { opacity: 1; transform: scale(1); }
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
-/* --- 9. RESPONSIVIDAD --- */
+/* --- MEDIA QUERIES (ADAPTACIÓN FINAL) --- */
 
-@media (max-width: 800px) {
-    .game-grid { grid-template-columns: repeat(2, 1fr); }
+/* Tablets */
+
+@media (max-width: 900px) {
+    .game-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
 }
 
-@media (max-width: 500px) {
-    .game-grid { grid-template-columns: 1fr; }
-    .shaking-text { font-size: 40px; }
-    .lobby-header h2 { font-size: 18px; }
-    #letter { font-size: 30px; }
+/* Móviles */
+@media (max-width: 600px) {
+    .lobby-header h2 {
+        font-size: 20px;
+    }
+
+    #letter {
+        font-size: 30px;
+    }
+
+    .leave-btn {
+        padding: 8px 12px;
+        font-size: 12px;
+    }
+
+    .game-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .shaking-text {
+        font-size: 45px;
+    }
+
+    .modal-content {
+        width: 95%;
+        padding: 20px;
+    }
+
+    .stop-banner {
+        padding: 20px;
+    }
 }
