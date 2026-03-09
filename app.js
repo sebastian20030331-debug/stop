@@ -8,25 +8,8 @@ const firebaseConfig = {
     appId: "1:214107973500:web:230316d4f6a553529c26f9"
 };
 
-if (!firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
-}
-
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
-
-document.addEventListener("DOMContentLoaded", () => {
-    // Buscamos todos los inputs
-    const inputs = document.querySelectorAll('input');
-    
-    inputs.forEach(input => {
-        // Usamos 'new-password' porque Chrome respeta más este valor para no sugerir nada
-        input.setAttribute('autocomplete', 'new-password');
-        input.setAttribute('spellcheck', 'false');
-        input.setAttribute('autocorrect', 'off');
-    });
-});
-
-// --- TUS FUNCIONES (createRoom, joinRoom, etc.) ---
 
 let room = "";
 let player = "";
@@ -35,50 +18,30 @@ let timerInterval;
 let roundFinished = false;
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
-// --- 1. FUNCIÓN CREAR SALA (CORREGIDA) ---
+// --- 1. GESTIÓN DE SALAS ---
 function createRoom() {
     player = document.getElementById("playerName").value.trim();
-    if (!player) return showAlert("⚠️ Escribe tu nombre para crear la sala");
-
-    // Generar código único
+    if (!player) return showAlert("⚠️ Escribe tu nombre");
     room = Math.random().toString(36).substring(2, 7).toUpperCase();
     isHost = true; 
 
-    const roomData = {
+    db.ref("rooms/" + room).set({
         host: player,
-        admin: player,
         status: "lobby",
         stop: false,
         usedLetters: [],
-        players: {
-            [player]: true
-        }
-    };
-
-    // Guardar todo de un solo golpe para evitar errores de sincronización
-    db.ref("rooms/" + room).set(roomData)
-        .then(() => {
-            enterLobby();
-        })
-        .catch(err => {
-            showAlert("❌ ERROR DE FIREBASE: " + err.message);
-        });
+        players: { [player]: true }
+    }).then(() => enterLobby());
 }
 
-// --- 2. FUNCIÓN UNIRSE A SALA ---
 function joinRoom() {
     player = document.getElementById("playerName").value.trim();
     room = document.getElementById("roomCode").value.toUpperCase().trim();
-    
-    if (!player || !room) return showAlert("⚠️ Completa nombre y código");
+    if (!player || !room) return showAlert("⚠️ Completa los datos");
 
     db.ref("rooms/" + room).once("value", snap => {
         if (!snap.exists()) return showAlert("⚠️ La sala no existe");
-        
-        isHost = false;
-        // Agregamos al jugador a la lista
-        db.ref("rooms/" + room + "/players/" + player).set(true)
-            .then(() => enterLobby());
+        db.ref("rooms/" + room + "/players/" + player).set(true).then(() => enterLobby());
     });
 }
 
@@ -86,146 +49,74 @@ function enterLobby() {
     document.getElementById("login").classList.add("hidden");
     document.getElementById("lobby").classList.remove("hidden");
     document.getElementById("roomDisplay").innerText = room;
-
     listenPlayers();
     listenGameStatus();
     updateScoreBoard();
-
-    // Verificamos si somos el host para mostrar el botón de inicio
-    db.ref("rooms/" + room + "/host").on("value", snap => {
-        isHost = (player === snap.val());
-        const startBtn = document.getElementById("startBtn");
-        if (startBtn) {
-            startBtn.classList.toggle("hidden", !isHost);
-        }
-    });
 }
 
 function listenPlayers() {
     db.ref("rooms/" + room + "/players").on("value", snap => {
         const players = snap.val() || {};
         let html = "<h3>👥 Jugadores</h3>";
-        for (let p in players) {
-            html += `<p>${p} ${p === player ? '<b>(Tú)</b>' : ''}</p>`;
-        }
+        for (let p in players) html += `<p>${p} ${p === player ? '<b>(Tú)</b>' : ''}</p>`;
         document.getElementById("players").innerHTML = html;
-    });
-}
-
-// --- 3. LÓGICA DE ENVÍO (7 CAMPOS) ---
-function submitAnswers() {
-    const cats = {
-        nombre: document.getElementById("catNombre").value.trim(),
-        apellido: document.getElementById("catApellido").value.trim(),
-        ciudad: document.getElementById("catCiudad").value.trim(),
-        animal: document.getElementById("catAnimal").value.trim(),
-        fruta: document.getElementById("catFruta").value.trim(),
-        color: document.getElementById("catColor").value.trim(),
-        cosa: document.getElementById("catCosa").value.trim()
-    };
-    db.ref("rooms/" + room + "/answers/" + player).set({ player, words: cats });
-}
-
-// --- 4. ALERTAS PERSONALIZADAS ---
-function showAlert(message) {
-    const alertOverlay = document.getElementById("customAlert");
-    const msgElem = document.getElementById("alertMessage");
-    if (alertOverlay && msgElem) {
-        msgElem.innerText = message;
-        alertOverlay.classList.remove("hidden");
-    } else {
-        alert(message); // Fallback
-    }
-}
-
-function closeAlert() {
-    const alertOverlay = document.getElementById("customAlert");
-    if (alertOverlay) alertOverlay.classList.add("hidden");
-}
-
-// --- 5. LISTENERS DE ESTADO (Para que el juego avance) ---
-function listenGameStatus() {
-    db.ref("rooms/" + room + "/status").on("value", snap => {
-        const status = snap.val();
-        if (!status) return;
-
-        if (status === "playing") {
-            startRound();
-        } else if (status === "review") {
-            showLiveReview();
-        } else if (status === "results") {
-            showFinalRanking();
-        } else if (status === "waiting_next") {
-            resetUIForNextRound();
-        }
-    });
-}
-
-function resetUIForNextRound() {
-    document.getElementById("resultModal").classList.add("hidden");
-    document.getElementById("game").classList.remove("hidden");
-    document.getElementById("lobby").classList.add("hidden");
-    document.getElementById("stopBtnAction").classList.add("hidden");
-    document.getElementById("stopOverlay").classList.add("hidden");
-    if (isHost) document.getElementById("postGameActions").classList.remove("hidden");
-}
-
-// ... (El resto de tus funciones como startGame, startTimer, stopRound se mantienen igual)
-// Asegúrate de NO repetir las funciones al final del archivo.
-
-function startGame() {
-    if (!isHost) return;
-
-    const roomRef = db.ref("rooms/" + room);
-
-    roomRef.once('value').then((snapshot) => {
-        const data = snapshot.val();
-        let usedLetters = data.usedLetters || [];
-
-        // Filtramos: letras que NO estén en la lista de usadas
-        let availableLetters = alphabet.filter(l => !usedLetters.includes(l));
-
-        // Si se acabaron las letras, reiniciamos el ciclo
-        if (availableLetters.length === 0) {
-            usedLetters = [];
-            availableLetters = [...alphabet];
-            console.log("Abecedario completado. Reiniciando...");
-        }
-
-        // Seleccionamos una letra al azar
-        let letter = availableLetters[Math.floor(Math.random() * availableLetters.length)];
-        usedLetters.push(letter);
-
-        // Actualizamos Firebase
-        roomRef.update({
-            status: "playing",
-            letter: letter,
-            usedLetters: usedLetters,
-            stop: false,
-            stopper: "",
-            answers: null,
-            evaluations: null,
-            lastRoundPoints: null
+        
+        // El host siempre se verifica aquí
+        db.ref("rooms/" + room + "/host").once("value", hSnap => {
+            isHost = (player === hSnap.val());
+            document.getElementById("startBtn").classList.toggle("hidden", !isHost);
         });
     });
 }
 
-function restartGame() {
-    startGame();
+// --- 2. LÓGICA DEL JUEGO ---
+function startGame() {
+    if (!isHost) return;
+    db.ref("rooms/" + room).once('value', snap => {
+        const data = snap.val();
+        let used = data.usedLetters || [];
+        let available = alphabet.filter(l => !used.includes(l));
+        if (available.length === 0) { used = []; available = [...alphabet]; }
+        let letter = available[Math.floor(Math.random() * available.length)];
+        used.push(letter);
+
+        db.ref("rooms/" + room).update({
+            status: "playing",
+            letter: letter,
+            usedLetters: used,
+            stop: false,
+            stopper: "",
+            answers: null,
+            evaluations: null
+        });
+    });
 }
 
-// --- MECÁNICAS ---
+function listenGameStatus() {
+    db.ref("rooms/" + room + "/status").on("value", snap => {
+        const status = snap.val();
+        if (status === "playing") startRound();
+        if (status === "review") showLiveReview();
+        if (status === "results") showFinalRanking();
+        if (status === "waiting_next") resetUIForNextRound();
+    });
+}
+
 function startRound() {
     roundFinished = false;
     clearInterval(timerInterval);
+    
     document.getElementById("resultModal").classList.add("hidden");
     document.getElementById("stopOverlay").classList.add("hidden");
     document.getElementById("lobby").classList.add("hidden");
     document.getElementById("game").classList.remove("hidden");
+    document.getElementById("stopBtnAction").classList.remove("hidden");
 
-    document.querySelectorAll("#game input").forEach(i => {
-        i.value = "";
-        i.disabled = false;
+    document.getElementById("postGameActions").classList.add("hidden");
+
+    document.querySelectorAll("#game input").forEach(i => { 
+        i.value = ""; 
+        i.disabled = false; 
     });
 
     db.ref("rooms/" + room + "/letter").once("value", snap => {
@@ -241,94 +132,79 @@ function startTimer(time) {
     timerInterval = setInterval(() => {
         t--;
         document.getElementById("timer").innerText = t;
-        if (t <= 0 && !roundFinished) {
-            stopRound();
-        }
+        if (t <= 0 && !roundFinished) stopRound();
     }, 1000);
 }
 
 function stopRound() {
     if (roundFinished) return;
-    roundFinished = true;
-    clearInterval(timerInterval);
-    document.querySelectorAll("#game input").forEach(i => i.disabled = true);
-
-    document.getElementById("stopOverlay").classList.remove("hidden");
-    document.getElementById("whoStopped").innerText = "¡Tú detuviste el juego!";
-
-    db.ref("rooms/" + room).update({
-        stop: true,
-        stopper: player
-    });
+    db.ref("rooms/" + room).update({ stop: true, stopper: player });
 }
 
 function listenStop() {
     db.ref("rooms/" + room + "/stop").on("value", snap => {
-        if (snap.val() === true) {
+        if (snap.val() === true && !roundFinished) {
             roundFinished = true;
             clearInterval(timerInterval);
             document.querySelectorAll("#game input").forEach(i => i.disabled = true);
+            document.getElementById("stopBtnAction").classList.add("hidden");
             document.getElementById("stopOverlay").classList.remove("hidden");
-
+            
             db.ref("rooms/" + room + "/stopper").once("value", sSnap => {
-                const quienFue = sSnap.val();
-                if (quienFue && quienFue !== player) {
-                    document.getElementById("whoStopped").innerText = `¡${quienFue} dijo STOP!`;
-                }
+                document.getElementById("whoStopped").innerText = `¡${sSnap.val()} dijo STOP!`;
             });
 
             submitAnswers();
-
-            if (isHost) {
-                setTimeout(() => {
-                    db.ref("rooms/" + room).update({ status: "review" });
-                }, 2000);
-            }
+            if (isHost) setTimeout(() => db.ref("rooms/" + room).update({status: "review"}), 3000);
         }
     });
+}
+
+function submitAnswers() {
+    const cats = {
+        nombre: document.getElementById("catNombre").value.trim(),
+        apellido: document.getElementById("catApellido").value.trim(),
+        ciudad: document.getElementById("catCiudad").value.trim(),
+        animal: document.getElementById("catAnimal").value.trim(),
+        fruta: document.getElementById("catFruta").value.trim(),
+        color: document.getElementById("catColor").value.trim(),
+        cosa: document.getElementById("catCosa").value.trim()
+    };
+    db.ref("rooms/" + room + "/answers/" + player).set({ player, words: cats });
 }
 
 function showLiveReview() {
     document.getElementById("resultModal").classList.remove("hidden");
     document.getElementById("stopOverlay").classList.add("hidden");
-    document.getElementById("modalTitle").innerText = "Revisión";
     document.getElementById("waitMsg").classList.toggle("hidden", isHost);
+    
     document.getElementById("closeModalBtn").classList.add("hidden");
 
     db.ref("rooms/" + room).on("value", snap => {
         const data = snap.val();
         if (!data || data.status !== "review") return;
-
-        let html = '<div class="review-container">';
+        
+        let html = '';
         for (let p in data.answers) {
             html += `<div class="player-review-block"><h4>👤 ${p}</h4>`;
-
             for (let cat in data.answers[p].words) {
                 let word = data.answers[p].words[cat] || "---";
-                let isValid = (data.evaluations?.[p]?.[cat] !== false);
-
-                // Estructura limpia para Flexbox:
-                html += `
-                <div class="word-row">
-                    <span class="${isValid ? 'valid' : 'invalid'}">
-                        <b>${cat}:</b> ${word}
-                    </span>
-                    ${isHost ? `<button onclick="toggleWord('${p}', '${cat}', ${!isValid})">+/-</button>` : ''}
+                let valid = (data.evaluations?.[p]?.[cat] !== false);
+                html += `<div class="word-row">
+                    <span class="${valid ? 'valid' : 'invalid'}"><b>${cat}:</b> ${word}</span>
+                    ${isHost ? `<button onclick="toggleWord('${p}','${cat}',${!valid})">+/-</button>` : ''}
                 </div>`;
             }
             html += `</div>`;
         }
-
+        
         if (isHost) {
-            html += `<button class="finish-btn" onclick="calculateFinalPoints()">Finalizar Calificación</button>`;
+            html += `<button class="finish-btn" onclick="calculateFinalPoints()">Calcular Puntos</button>`;
         }
         document.getElementById("finalResults").innerHTML = html;
     });
 }
-
-function toggleWord(target, cat, state) {
-    db.ref(`rooms/${room}/evaluations/${target}/${cat}`).set(state);
-}
+function toggleWord(p, cat, state) { db.ref(`rooms/${room}/evaluations/${p}/${cat}`).set(state); }
 
 function calculateFinalPoints() {
     db.ref("rooms/" + room).once("value", snap => {
@@ -337,70 +213,43 @@ function calculateFinalPoints() {
         let wordCounts = {};
         let roundScores = {};
 
-        // 1. Contar palabras válidas para detectar repetidas
         for (let p in data.answers) {
             for (let cat in data.answers[p].words) {
                 let val = data.answers[p].words[cat].toLowerCase().trim();
-                let approved = (data.evaluations?.[p]?.[cat] !== false);
-
-                if (approved && val && val[0].toUpperCase() === letter) {
+                if ((data.evaluations?.[p]?.[cat] !== false) && val && val[0].toUpperCase() === letter) {
                     wordCounts[cat] = wordCounts[cat] || {};
                     wordCounts[cat][val] = (wordCounts[cat][val] || 0) + 1;
                 }
             }
         }
 
-        // 2. Asignar puntajes individuales y totales
         for (let p in data.answers) {
-            let ptsTotal = 0;
-            let individualScores = {}; // Nuevo: para guardar el puntaje de cada palabra
-
+            let total = 0;
+            let ind = {};
             for (let cat in data.answers[p].words) {
                 let val = data.answers[p].words[cat].toLowerCase().trim();
-                let approved = (data.evaluations?.[p]?.[cat] !== false);
-                let wordPoints = 0;
-
-                if (approved && val && val[0].toUpperCase() === letter) {
-                    wordPoints = (wordCounts[cat][val] > 1) ? 5 : 10;
+                let pts = 0;
+                if ((data.evaluations?.[p]?.[cat] !== false) && val && val[0].toUpperCase() === letter) {
+                    pts = (wordCounts[cat][val] > 1) ? 5 : 10;
                 }
-
-                individualScores[cat] = wordPoints; // Guardamos el puntaje de la categoría
-                ptsTotal += wordPoints;
+                ind[cat] = pts; total += pts;
             }
-
-            // Guardamos ambos datos para el historial detallado
-            roundScores[p] = {
-                total: ptsTotal,
-                individual: individualScores
-            };
+            roundScores[p] = { total, individual: ind };
         }
-
-        // 3. Actualizar Firebase
-        db.ref("rooms/" + room).update({
-            status: "results",
-            lastRoundPoints: roundScores
-        });
+        db.ref("rooms/" + room).update({ status: "results", lastRoundPoints: roundScores });
     });
 }
 
 function showFinalRanking() {
     db.ref("rooms/" + room + "/lastRoundPoints").once("value", snap => {
         let pts = snap.val() || {};
-        let html = "";
         
-        // CORRECCIÓN: Ordenar y extraer el valor numérico .total
-        Object.entries(pts).sort((a, b) => {
-            const valA = (typeof a[1] === 'object') ? (a[1].total || 0) : a[1];
-            const valB = (typeof b[1] === 'object') ? (b[1].total || 0) : b[1];
-            return valB - valA;
-        }).forEach(([n, s]) => {
-            // Extraemos solo el número para mostrar en el modal
-            const finalPts = (typeof s === 'object') ? (s.total || 0) : s;
-            html += `<p style="color: white; margin: 10px 0;"><b>${n}:</b> ${finalPts} pts</p>`;
-        });
-
+        let html = "<h3>Ranking de la Ronda</h3>";
+        html += Object.entries(pts)
+            .map(([n, s]) => `<p><b>${n}:</b> ${s.total} pts</p>`)
+            .join('');
+            
         document.getElementById("finalResults").innerHTML = html;
-        document.getElementById("modalTitle").innerText = "Resultados Ronda";
 
         if (isHost) {
             document.getElementById("closeModalBtn").classList.remove("hidden");
@@ -409,38 +258,35 @@ function showFinalRanking() {
 }
 
 function closeResults() {
-    if (!isHost) return;
     db.ref("rooms/" + room).once("value", snap => {
         const data = snap.val();
-        const roundData = data.lastRoundPoints; // Esto es { total: X, individual: {...} }
         
-        if (roundData) {
-            // 1. Guardamos el objeto completo en el historial para el desglose
-            db.ref(`rooms/${room}/history`).push({
-                letter: data.letter,
-                details: data.answers,
-                evaluations: data.evaluations || {},
-                pointsWon: roundData
-            });
+        const roundInfo = {
+            letter: data.letter,
+            details: data.answers,
+            evaluations: data.evaluations || {},
+            pointsWon: data.lastRoundPoints
+        };
 
-            // 2. CORRECCIÓN CLAVE: Sumar solo el valor numérico al total acumulado
-            for (let p in roundData) {
-                // Extraemos el número .total. Si por error es un número viejo, lo usamos directo.
-                const puntosDeEstaRonda = (typeof roundData[p] === 'object') ? (roundData[p].total || 0) : roundData[p];
-                
-                db.ref("rooms/" + room + "/totals/" + p).transaction(current => (current || 0) + puntosDeEstaRonda);
-            }
+        db.ref(`rooms/${room}/history`).push(roundInfo);
+
+        for (let p in data.lastRoundPoints) {
+            let pnts = data.lastRoundPoints[p].total;
+            db.ref(`rooms/${room}/totals/${p}`).transaction(curr => (curr || 0) + pnts);
         }
-        
-        // 3. Limpiar estado de la sala
-        db.ref("rooms/" + room).update({
-            status: "waiting_next",
+
+        db.ref("rooms/" + room).update({ 
+            status: "waiting_next", 
             stop: false,
             answers: null,
-            evaluations: null,
-            lastRoundPoints: null
+            evaluations: null 
         });
     });
+}
+
+function resetUIForNextRound() {
+    document.getElementById("resultModal").classList.add("hidden");
+    if (isHost) document.getElementById("postGameActions").classList.remove("hidden");
 }
 
 function updateScoreBoard() {
@@ -449,26 +295,17 @@ function updateScoreBoard() {
         if (!data) return;
 
         const totals = data.totals || {};
-        const history = data.history || {};
+        const history = data.history || {}; 
         const container = document.getElementById("totalPointsList");
         container.innerHTML = "";
 
-        // Ordenar y mostrar
-        Object.entries(totals).sort((a, b) => {
-            const scoreA = (typeof a[1] === 'object') ? (a[1].total || 0) : a[1];
-            const scoreB = (typeof b[1] === 'object') ? (b[1].total || 0) : b[1];
-            return scoreB - scoreA;
-        }).forEach(([pName, totalData]) => {
-            
-            // CORRECCIÓN: Si totalData es el objeto erróneo, extraemos el número
-            const finalScore = (typeof totalData === 'object') ? (totalData.total || 0) : totalData;
-
+        Object.entries(totals).sort((a, b) => b[1] - a[1]).forEach(([pName, score]) => {
             const card = document.createElement("div");
             card.className = "player-score-card";
             card.innerHTML = `
                 <div class="score-header" onclick="toggleDetails(this)">
                     <span>👤 ${pName}</span>
-                    <span>${finalScore} pts <small>▼</small></span>
+                    <span>${score} pts <small>▼</small></span>
                 </div>
                 <div class="score-details hidden">
                     ${generateHistoryHTML(pName, history)}
@@ -479,94 +316,48 @@ function updateScoreBoard() {
     });
 }
 
-// --- SALIR DE LA SALA ---
-function leaveRoom() {
-    document.getElementById("confirmModal").classList.remove("hidden");
-}
-
-function closeConfirmModal() {
-    document.getElementById("confirmModal").classList.add("hidden");
-}
-
-function executeLeave() {
-    if (!room || !player) return;
-
-    db.ref(`rooms/${room}/players/${player}`).remove().then(() => {
-        db.ref(`rooms/${room}/players`).off();
-        db.ref(`rooms/${room}/status`).off();
-        db.ref(`rooms/${room}/stop`).off();
-
-        room = "";
-        document.getElementById("confirmModal").classList.add("hidden");
-        document.getElementById("lobby").classList.add("hidden");
-        document.getElementById("game").classList.add("hidden");
-        document.getElementById("login").classList.remove("hidden");
-        document.getElementById("roomCode").value = "";
-    });
-}
-
-function generateHistoryHTML(playerName, history) {
-    const rounds = Object.values(history);
-    if (rounds.length === 0) return "<p style='padding:10px; font-size:12px;'>No hay rondas registradas.</p>";
-
-    return rounds.map((round, idx) => {
-        // Obtenemos los datos de puntos del jugador en esta ronda
-        const roundData = round.pointsWon ? round.pointsWon[playerName] : null;
-        
-        // CORRECCIÓN: Extraer el total numérico con seguridad
-        let totalRound = 0;
-        if (roundData) {
-            totalRound = (typeof roundData === 'object') ? (roundData.total || 0) : roundData;
-        }
-
-        let itemsHtml = "";
-        const playerAnswers = round.details[playerName]?.words || {};
-
-        for (let cat in playerAnswers) {
-            const word = playerAnswers[cat] || "---";
-            const isValid = round.evaluations?.[playerName]?.[cat] !== false;
-            
-            // CORRECCIÓN: Extraer el puntaje individual de la categoría
-            let score = 0;
-            if (roundData && roundData.individual) {
-                score = roundData.individual[cat] || 0;
-            } else if (isValid && word !== "---") {
-                // Backup por si no se guardó el individual: asumimos 10 si es válido
-                score = 10; 
-            }
-
-            itemsHtml += `
-            <li class="${isValid ? 'valid-row' : 'line-through'}">
-                <span class="cat-name">${cat}:</span>
-                <span class="word-val">${word}</span>
-                <span class="word-score">${score} pts</span> 
-            </li>`;
-        }
-
-        return `
-        <div class="round-history-item">
-            <strong style="padding-left:15px; display:block; margin-bottom:5px; color: #fff;">
-                Ronda ${idx + 1} (Letra ${round.letter}): ${totalRound} pts
-            </strong>
-            <ul class="history-list">${itemsHtml}</ul>
-        </div>`;
-    }).join('');
-}
-
 function toggleDetails(element) {
     const details = element.nextElementSibling;
     details.classList.toggle("hidden");
 }
 
-// Función para mostrar la alerta fija
-function showAlert(message) {
-    const alertOverlay = document.getElementById("customAlert");
-    document.getElementById("alertMessage").innerText = message;
-    alertOverlay.classList.remove("hidden");
+function generateHistoryHTML(playerName, history) {
+    const rounds = Object.values(history);
+    if (rounds.length === 0) return "<p style='padding:10px; font-size:12px; color: #aaa;'>No hay rondas registradas aún.</p>";
+
+    return rounds.map((round, idx) => {
+        const roundData = round.pointsWon ? round.pointsWon[playerName] : null;
+        let totalRound = roundData ? (roundData.total || 0) : 0;
+        let itemsHtml = "";
+        const playerAnswers = round.details[playerName]?.words || {};
+
+        for (let cat in playerAnswers) {
+            const word = playerAnswers[cat] || "---";
+            const score = (roundData && roundData.individual) ? (roundData.individual[cat] || 0) : 0;
+            const isValid = score > 0;
+
+            itemsHtml += `
+            <li style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 3px; border-bottom: 1px solid #333;">
+                <span><b>${cat}:</b> ${word}</span>
+                <span style="color: ${isValid ? '#00ffcc' : '#ff4444'}">${score} pts</span>
+            </li>`;
+        }
+
+        return `
+        <div style="margin-top: 10px; border-left: 3px solid #00ffcc; padding-left: 10px;">
+            <p style="font-size: 14px; margin-bottom: 5px;">Ronda ${idx + 1} (Letra ${round.letter}) - <b>${totalRound} pts</b></p>
+            <ul style="list-style: none; padding: 0;">${itemsHtml}</ul>
+        </div>`;
+    }).join('');
 }
 
-// Función para cerrar la alerta con el botón OK
-function closeAlert() {
-    document.getElementById("customAlert").classList.add("hidden");
+// --- UTILIDADES ---
+function showAlert(msg) {
+    document.getElementById("alertMessage").innerText = msg;
+    document.getElementById("customAlert").classList.remove("hidden");
 }
-
+function closeAlert() { document.getElementById("customAlert").classList.add("hidden"); }
+function restartGame() { startGame(); }
+function leaveRoom() { document.getElementById("confirmModal").classList.remove("hidden"); }
+function closeConfirmModal() { document.getElementById("confirmModal").classList.add("hidden"); }
+function executeLeave() { location.reload(); }
