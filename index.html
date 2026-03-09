@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="es">
 
 <head>
@@ -11,8 +12,9 @@
 </head>
 
 <body>
+
     <div class="container">
-        <h1> STOP Online</h1>
+        <h1>STOP Online</h1>
 
         <div id="login">
             <input id="playerName" placeholder="Tu nombre">
@@ -27,10 +29,7 @@
                 <h2>🏠 Sala: <span id="roomDisplay"></span></h2>
                 <button class="leave-btn" onclick="leaveRoom()">🚪 Salir</button>
             </div>
-
-            <div id="players" class="players-list">
-            </div>
-
+            <div id="players" class="players-list"></div>
             <button id="startBtn" class="hidden" onclick="startGame()">Iniciar Juego</button>
         </div>
 
@@ -49,48 +48,22 @@
             </div>
 
             <div id="gameFields" class="game-grid">
-                <div class="field-item">
-                    <label>Nombre</label>
-                    <input id="catNombre" name="n_xyz_1" type="text" autocomplete="off" readonly
-                        onfocus="this.removeAttribute('readonly');">
+                <div class="field-item"><label>Nombre</label><input id="catNombre" type="text" autocomplete="off"></div>
+                <div class="field-item"><label>Apellido</label><input id="catApellido" type="text" autocomplete="off">
                 </div>
-                <div class="field-item">
-                    <label>Apellido</label>
-                    <input id="catApellido" name="a_xyz_2" type="text" autocomplete="off" readonly
-                        onfocus="this.removeAttribute('readonly');">
-                </div>
-                <div class="field-item">
-                    <label>Ciudad</label>
-                    <input id="catCiudad" name="n_xyz_1" type="text" autocomplete="off" readonly
-                        onfocus="this.removeAttribute('readonly');">
-                </div>
-                <div class="field-item">
-                    <label>Animal</label>
-                    <input id="catAnimal" name="a_xyz_2" type="text" autocomplete="off" readonly
-                        onfocus="this.removeAttribute('readonly');">
-                </div>
-                <div class="field-item">
-                    <label>Fruta</label>
-                    <input id="catFruta" name="n_xyz_1" type="text" autocomplete="off" readonly
-                        onfocus="this.removeAttribute('readonly');">
-                </div>
-                <div class="field-item">
-                    <label>Color</label>
-                    <input id="catColor" name="a_xyz_2" type="text" autocomplete="off" readonly
-                        onfocus="this.removeAttribute('readonly');">
-                </div>
-                <div class="field-item">
-                    <label>Cosa</label>
-                    <input id="catCosa" name="n_xyz_1" type="text" autocomplete="off" readonly
-                        onfocus="this.removeAttribute('readonly');">
-                </div>
+                <div class="field-item"><label>Ciudad</label><input id="catCiudad" type="text" autocomplete="off"></div>
+                <div class="field-item"><label>Animal</label><input id="catAnimal" type="text" autocomplete="off"></div>
+                <div class="field-item"><label>Fruta</label><input id="catFruta" type="text" autocomplete="off"></div>
+                <div class="field-item"><label>Color</label><input id="catColor" type="text" autocomplete="off"></div>
+                <div class="field-item"><label>Cosa</label><input id="catCosa" type="text" autocomplete="off"></div>
             </div>
 
             <button id="stopBtnAction" class="stop-btn" onclick="stopRound()">¡STOP!</button>
 
             <div id="scoreBoard" class="scoreboard">
                 <h4>🏆 Puntos Acumulados</h4>
-                <div id="totalPointsList"></div>
+                <div id="totalPointsList">
+                </div>
             </div>
         </div>
 
@@ -99,10 +72,7 @@
                 <h2 id="modalTitle">🏆 Resultados</h2>
                 <div id="finalResults"></div>
                 <hr>
-                <button id="closeModalBtn" class="finish-btn hidden" style="background:#00c3ff;"
-                    onclick="closeResults()">
-                    Cerrar y volver a la mesa
-                </button>
+                <button id="closeModalBtn" class="finish-btn hidden" onclick="closeResults()">Cerrar y volver</button>
                 <p id="waitMsg" class="wait-text">Esperando al anfitrión...</p>
             </div>
         </div>
@@ -115,28 +85,25 @@
         </div>
 
         <div id="confirmModal" class="modal hidden">
-            <div class="modal-content" style="text-align: center; max-width: 400px;">
-                <h2 style="color: #ff4444;">🚪 ¿Abandonar Sala?</h2>
-                <p>Si sales, perderás tu progreso en esta partida.</p>
-                <div style="display: flex; gap: 10px; margin-top: 20px;">
-                    <button onclick="closeConfirmModal()" style="background: #444; flex: 1;">Cancelar</button>
-                    <button onclick="executeLeave()" style="background: #ff4444; flex: 1;">Salir ahora</button>
+            <div class="modal-content">
+                <h2 style="color: #ff4444;">🚪 ¿Abandonar?</h2>
+                <div style="display: flex; justify-content: center; gap: 10px;">
+                    <button onclick="closeConfirmModal()">Cancelar</button>
+                    <button onclick="executeLeave()" style="background: #ff4444;">Salir</button>
                 </div>
             </div>
         </div>
+
     </div>
 
-    <script src="app.js"></script>
-</body>
-
-<div id="customAlert" class="alert-overlay hidden">
-    <div class="player-score-card alert-centered-card">
-
-        <div class="alert-body">
-            <p id="alertMessage">Mensaje de error aquí</p>
-            <button class="stop-btn" style="width: 100%; margin-top: 15px;" onclick="closeAlert()">OK</button>
+    <div id="customAlert" class="alert-overlay hidden">
+        <div class="player-score-card alert-centered-card">
+            <p id="alertMessage"></p>
+            <button class="stop-btn" onclick="closeAlert()">OK</button>
         </div>
     </div>
-</div>
+    <script src="app.js"></script>
+
+</body>
 
 </html>
