@@ -236,7 +236,15 @@ function showLiveReview() {
         const data = snap.val();
         if (!data || data.status !== "review") return;
         
-        let html = '';
+        // 1. Insertamos las instrucciones dinámicamente al inicio del HTML
+        let html = `
+            <div id="voteInstructions" style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; margin-bottom: 20px; border: 1px dashed #00ffcc;">
+                <p style="margin: 0; font-size: 14px; color: #aaa;">
+                    Vota ✅ si la palabra es válida o ❌ si no lo es.<br>
+                    <span style="color: #00ffcc;">La mayoría decide el puntaje.</span>
+                </p>
+            </div>`;
+
         const totalPlayers = Object.keys(data.players).length;
 
         for (let p in data.answers) {
@@ -244,22 +252,17 @@ function showLiveReview() {
             for (let cat in data.answers[p].words) {
                 let word = data.answers[p].words[cat] || "---";
                 
-                // --- LÓGICA DE CONTEO DE VOTOS ---
                 let votes = data.evaluations?.[p]?.[cat] || {};
                 let positiveVotes = Object.values(votes).filter(v => v === true).length;
                 let negativeVotes = Object.values(votes).filter(v => v === false).length;
                 
-                // Una palabra es válida si no tiene votos negativos mayoritarios 
-                // (O puedes definirlo como: más positivos que negativos)
                 let isValid = positiveVotes >= negativeVotes;
-                
-                // El botón que ve el usuario depende de SU propio voto previo
-                let myVote = votes[player]; // true, false o undefined
+                let myVote = votes[player];
 
                 html += `<div class="word-row">
                     <span class="${isValid ? 'valid' : 'invalid'}">
                         <b>${cat}:</b> ${word} 
-                        <small>(${positiveVotes}✅ / ${negativeVotes}❌)</small>
+                        <small style="display:block; font-size:10px; opacity:0.6;">(${positiveVotes}✅ / ${negativeVotes}❌)</small>
                     </span>
                     <div class="vote-btns">
                         <button class="${myVote === true ? 'active-v' : ''}" onclick="toggleWord('${p}','${cat}', true)">✅</button>
