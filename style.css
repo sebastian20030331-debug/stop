@@ -75,7 +75,6 @@ button:active {
     border-bottom: 1px solid #333;
     padding-bottom: 15px;
     gap: 10px;
-    /* Espacio mínimo entre título y botón */
 }
 
 .lobby-header h2 {
@@ -84,15 +83,12 @@ button:active {
     text-align: left;
     color: white;
     white-space: nowrap;
-    /* Evita que el título se parta en dos líneas */
     overflow: hidden;
     text-overflow: ellipsis;
-    /* Si el nombre de sala es muy largo, pone puntos suspensivos */
 }
 
 #letter {
     font-size: 40px;
-    /* Tamaño ajustado para la cabecera */
     color: #00ffcc;
     text-shadow: 0 0 10px rgba(0, 255, 204, 0.3);
     margin-left: 10px;
@@ -104,7 +100,6 @@ button:active {
     padding: 10px 15px;
     margin: 0;
     flex-shrink: 0;
-    /* Impide que el botón se achique */
 }
 
 .leave-btn:hover {
@@ -253,7 +248,7 @@ button:active {
     font-weight: bold;
 }
 
-/* --- MODAL Y REVISIÓN --- */
+/* --- MODAL Y REVISIÓN DEMOCRÁTICA --- */
 
 .modal {
     position: fixed;
@@ -279,16 +274,86 @@ button:active {
     border: 1px solid #444;
 }
 
-.valid {
-    color: #00ffcc;
-    font-weight: bold;
+.player-review-block {
+    margin-bottom: 25px;
+    border-bottom: 2px solid #333;
+    padding-bottom: 15px;
 }
 
-.invalid {
-    color: #ff4444;
+.player-review-block h4 {
+    text-align: left;
+    color: #ffcc00;
+    margin-bottom: 10px;
+    font-size: 20px;
+}
+
+.word-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    margin-bottom: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    text-align: left;
+}
+
+.word-info {
+    flex-grow: 1;
+}
+
+.word-info b {
+    color: #00ffcc;
+    text-transform: capitalize;
+}
+
+/* Estados de validación visual */
+.valid-word {
+    color: #00ffcc;
+    opacity: 1;
+}
+
+.invalid-word {
     text-decoration: line-through;
+    color: #ff4444 !important;
     opacity: 0.5;
 }
+
+/* Botones de Voto */
+.vote-btns {
+    display: flex;
+    gap: 8px;
+    margin-left: 15px;
+}
+
+.vote-btns button {
+    padding: 8px 12px;
+    font-size: 14px;
+    margin: 0;
+    background: #333;
+    border: 1px solid #444;
+    min-width: 45px;
+    flex-shrink: 0;
+}
+
+.vote-btns button.active-v {
+    background: #28a745 !important;
+    border-color: #28a745;
+}
+
+.vote-btns button.active-x {
+    background: #dc3545 !important;
+    border-color: #dc3545;
+}
+
+.vote-count {
+    font-size: 11px;
+    display: block;
+    color: #aaa;
+    margin-top: 4px;
+}
+
+/* --- MARCADOR Y SCORE CARDS --- */
 
 .player-score-card {
     background: #222;
@@ -309,9 +374,7 @@ button:active {
     border-left: 4px solid #00c3ff;
 }
 
-.score-header:hover {
-    background: #333;
-}
+.score-header:hover { background: #333; }
 
 .score-details {
     padding: 10px;
@@ -320,66 +383,13 @@ button:active {
     border-top: 1px solid #333;
 }
 
-.round-history-item {
-    border-bottom: 1px solid #333;
-    padding: 8px 0;
-}
-
-.round-history-item ul {
-    margin: 5px 0;
-    padding-left: 20px;
-    font-size: 13px;
-    color: #bbb;
-}
-
-.line-through {
-    text-decoration: line-through;
-    color: #ff4444;
-}
-
-/* --- AJUSTE DE ALINEACIÓN EN REVISIÓN --- */
-
-.word-row {
-    display: flex;
-    /* Convierte la fila en un contenedor flexible */
-    justify-content: space-between;
-    /* Empuja el texto a la izquierda y el botón a la derecha */
-    align-items: center;
-    /* Centra verticalmente el texto con el botón */
-    padding: 10px;
-    margin-bottom: 5px;
-    background: rgba(255, 255, 255, 0.05);
-    /* Un fondo sutil para separar filas */
-    border-radius: 8px;
-    text-align: left;
-    /* Asegura que el texto interno empiece a la izquierda */
-}
-
-.word-row span {
-    flex-grow: 1;
-    /* El texto toma todo el espacio disponible */
-    margin-right: 15px;
-    /* Espacio de seguridad antes del botón */
-}
-
-.word-row button {
-    margin: 0;
-    /* Quita márgenes extra para que no se desplace */
-    flex-shrink: 0;
-    /* Evita que el botón se haga pequeño si el texto es largo */
-    min-width: 60px;
-    /* Tamaño fijo para el botón +/- */
-}
-
-/* Contenedor de la lista en el desplegable */
+/* --- HISTORIAL --- */
 
 .history-list {
     list-style: none;
     padding: 10px 15px;
     margin: 0;
 }
-
-/* --- ESTILO DE HISTORIAL LIMPIO --- */
 
 .history-list li {
     display: flex;
@@ -389,11 +399,8 @@ button:active {
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-/* Palabras Correctas: Todo en Blanco */
-
 .cat-name {
     color: #ffffff;
-    /* Blanco puro */
     font-size: 0.9em;
     width: 85px;
     text-align: left;
@@ -405,33 +412,21 @@ button:active {
     text-align: left;
     padding-left: 10px;
     color: #ffffff;
-    /* Blanco puro */
 }
-
-/* Puntos: Sin corchetes y en color neón */
 
 .word-score {
     font-weight: bold;
     color: #00ffcc;
     min-width: 70px;
     text-align: right;
-    font-family: 'Segoe UI', sans-serif;
 }
-
-/* --- Palabras Incorrectas/Anuladas --- */
 
 .line-through .cat-name,
-
-.line-through .word-val {
-    text-decoration: line-through;
-    color: #ff4444;
-    /* Rojo para lo que no vale */
-    opacity: 0.7;
-}
-
+.line-through .word-val,
 .line-through .word-score {
-    color: #ff4444;
     text-decoration: line-through;
+    color: #ff4444;
+    opacity: 0.7;
 }
 
 /* --- ALERTA CENTRAL FIJA --- */
@@ -443,112 +438,46 @@ button:active {
     width: 100%;
     height: 100%;
     background: rgba(0, 0, 0, 0.8);
-    /* Oscurece el fondo */
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 10000;
-    transition: opacity 0.3s ease;
 }
 
 .alert-centered-card {
     width: 90%;
     max-width: 350px;
     border: 2px solid #00ffcc !important;
-    /* Borde neón */
     box-shadow: 0 0 20px rgba(0, 255, 204, 0.4);
-}
-
-.alert-body {
-    padding: 20px;
-    background: #111;
-    text-align: center;
-    color: white;
-}
-
-.alert-overlay.hidden {
-    display: none;
-    opacity: 0;
 }
 
 /* --- ANIMACIONES --- */
 
 @keyframes shake {
-
-    0% {
-        transform: translate(1px, 1px) rotate(0deg);
-    }
-
-    10% {
-        transform: translate(-1px, -2px) rotate(-1deg);
-    }
-
-    20% {
-        transform: translate(-3px, 0px) rotate(1deg);
-    }
-
-    30% {
-        transform: translate(3px, 2px) rotate(0deg);
-    }
-
-    40% {
-        transform: translate(1px, -1px) rotate(1deg);
-    }
-
-    50% {
-        transform: translate(-1px, 2px) rotate(-1deg);
-    }
+    0% { transform: translate(1px, 1px) rotate(0deg); }
+    10% { transform: translate(-1px, -2px) rotate(-1deg); }
+    20% { transform: translate(-3px, 0px) rotate(1deg); }
+    30% { transform: translate(3px, 2px) rotate(0deg); }
+    40% { transform: translate(1px, -1px) rotate(1deg); }
+    50% { transform: translate(-1px, 2px) rotate(-1deg); }
 }
 
 @keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
-
-    to {
-        opacity: 1;
-    }
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
-/* --- MEDIA QUERIES (ADAPTACIÓN FINAL) --- */
-
-/* Tablets */
+/* --- MEDIA QUERIES --- */
 
 @media (max-width: 900px) {
-    .game-grid {
-        grid-template-columns: repeat(3, 1fr);
-    }
+    .game-grid { grid-template-columns: repeat(3, 1fr); }
 }
 
-/* Móviles */
 @media (max-width: 600px) {
-    .lobby-header h2 {
-        font-size: 20px;
-    }
-
-    #letter {
-        font-size: 30px;
-    }
-
-    .leave-btn {
-        padding: 8px 12px;
-        font-size: 12px;
-    }
-
-    .game-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .shaking-text {
-        font-size: 45px;
-    }
-
-    .modal-content {
-        width: 95%;
-        padding: 20px;
-    }
-
-    .stop-banner {
-        padding: 20px;
-    }
+    .lobby-header h2 { font-size: 20px; }
+    #letter { font-size: 30px; }
+    .game-grid { grid-template-columns: 1fr; }
+    .shaking-text { font-size: 45px; }
+    .modal-content { width: 95%; padding: 20px; }
+    .stop-banner { padding: 20px; }
 }

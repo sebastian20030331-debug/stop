@@ -161,11 +161,18 @@ function startTimer(time) {
     timerInterval = setInterval(() => {
         t--;
         document.getElementById("timer").innerText = t;
-        // Si el tiempo llega a cero, dispara el STOP automáticamente
-        if (t <= 0 && !roundFinished) stopRound();
+        
+        // Si el tiempo llega a cero
+        if (t <= 0 && !roundFinished) {
+            clearInterval(timerInterval);
+            // Enviamos "reloj" como el responsable del STOP
+            db.ref("rooms/" + room).update({ 
+                stop: true, 
+                stopper: "reloj" 
+            });
+        }
     }, 1000);
 }
-
 // Envía la señal a Firebase de que el jugador actual presionó STOP
 function stopRound() {
     if (roundFinished) return;
@@ -179,17 +186,23 @@ function listenStop() {
             roundFinished = true;
             clearInterval(timerInterval);
             
-            // Bloquea escritura
             document.querySelectorAll("#game input").forEach(i => i.disabled = true);
             document.getElementById("stopBtnAction").classList.add("hidden");
             document.getElementById("stopOverlay").classList.remove("hidden");
             
+            // Leemos quién detuvo el juego
             db.ref("rooms/" + room + "/stopper").once("value", sSnap => {
-                document.getElementById("whoStopped").innerText = `¡${sSnap.val()} dijo STOP!`;
+                const quien = sSnap.val();
+                const textoAlerta = document.getElementById("whoStopped");
+
+                if (quien === "reloj") {
+                    textoAlerta.innerText = "⏰ ¡El tiempo se ha agotado!";
+                } else {
+                    textoAlerta.innerText = `🛑 ¡${quien} dijo STOP!`;
+                }
             });
 
-            submitAnswers(); // Envía respuestas a la base de datos
-            // El host da 3 segundos de gracia antes de pasar a la revisión
+            submitAnswers(); 
             if (isHost) setTimeout(() => db.ref("rooms/" + room).update({status: "review"}), 3000);
         }
     });
@@ -217,65 +230,97 @@ function submitAnswers() {
 function showLiveReview() {
     document.getElementById("resultModal").classList.remove("hidden");
     document.getElementById("stopOverlay").classList.add("hidden");
-    document.getElementById("waitMsg").classList.toggle("hidden", isHost);
     document.getElementById("closeModalBtn").classList.add("hidden");
 
-    // Escucha cambios en las respuestas y evaluaciones en tiempo real
     db.ref("rooms/" + room).on("value", snap => {
         const data = snap.val();
         if (!data || data.status !== "review") return;
         
         let html = '';
+        const totalPlayers = Object.keys(data.players).length;
+
         for (let p in data.answers) {
             html += `<div class="player-review-block"><h4>👤 ${p}</h4>`;
             for (let cat in data.answers[p].words) {
                 let word = data.answers[p].words[cat] || "---";
-                let valid = (data.evaluations?.[p]?.[cat] !== false);
+                
+                // --- LÓGICA DE CONTEO DE VOTOS ---
+                let votes = data.evaluations?.[p]?.[cat] || {};
+                let positiveVotes = Object.values(votes).filter(v => v === true).length;
+                let negativeVotes = Object.values(votes).filter(v => v === false).length;
+                
+                // Una palabra es válida si no tiene votos negativos mayoritarios 
+                // (O puedes definirlo como: más positivos que negativos)
+                let isValid = positiveVotes >= negativeVotes;
+                
+                // El botón que ve el usuario depende de SU propio voto previo
+                let myVote = votes[player]; // true, false o undefined
+
                 html += `<div class="word-row">
-                    <span class="${valid ? 'valid' : 'invalid'}"><b>${cat}:</b> ${word}</span>
-                    ${isHost ? `<button onclick="toggleWord('${p}','${cat}',${!valid})">+/-</button>` : ''}
+                    <span class="${isValid ? 'valid' : 'invalid'}">
+                        <b>${cat}:</b> ${word} 
+                        <small>(${positiveVotes}✅ / ${negativeVotes}❌)</small>
+                    </span>
+                    <div class="vote-btns">
+                        <button class="${myVote === true ? 'active-v' : ''}" onclick="toggleWord('${p}','${cat}', true)">✅</button>
+                        <button class="${myVote === false ? 'active-x' : ''}" onclick="toggleWord('${p}','${cat}', false)">❌</button>
+                    </div>
                 </div>`;
             }
             html += `</div>`;
         }
         
         if (isHost) {
-            html += `<button class="finish-btn" onclick="calculateFinalPoints()">Calcular Puntos</button>`;
+            html += `<button class="finish-btn" onclick="calculateFinalPoints()">Calcular Puntos Finales</button>`;
         }
         document.getElementById("finalResults").innerHTML = html;
     });
 }
 
-// Permite al host anular o validar palabras específicas
-function toggleWord(p, cat, state) { db.ref(`rooms/${room}/evaluations/${p}/${cat}`).set(state); }
+// Permite que CUALQUIER jugador vote. 
+// Guardamos el voto bajo: rooms/CODIGO/evaluations/JUGADOR_EVALUADO/CATEGORIA/VOTANTE
+function toggleWord(targetPlayer, cat, currentState) {
+    // currentState nos dirá si el jugador actual quiere marcarla como válida (true) o no (false)
+    db.ref(`rooms/${room}/evaluations/${targetPlayer}/${cat}/${player}`).set(currentState);
+}
 
 // (Solo Host) Aplica la lógica: 10 pts si es única, 5 pts si está repetida entre jugadores
 function calculateFinalPoints() {
     db.ref("rooms/" + room).once("value", snap => {
         const data = snap.val();
         const letter = data.letter.toUpperCase();
-        let wordCounts = {}; // Para detectar palabras repetidas
+        let wordCounts = {}; 
         let roundScores = {};
 
-        // 1. Contar frecuencia de palabras válidas
+        // Función auxiliar para decidir si la palabra ganó por mayoría
+        const isWordValidByVote = (targetP, category) => {
+            let votes = data.evaluations?.[targetP]?.[category] || {};
+            let pos = Object.values(votes).filter(v => v === true).length;
+            let neg = Object.values(votes).filter(v => v === false).length;
+            // Si nadie votó, la consideramos válida por defecto si tiene contenido
+            if (pos === 0 && neg === 0) return true; 
+            return pos >= neg;
+        };
+
+        // 1. Contar frecuencia de palabras válidas por voto
         for (let p in data.answers) {
             for (let cat in data.answers[p].words) {
                 let val = data.answers[p].words[cat].toLowerCase().trim();
-                if ((data.evaluations?.[p]?.[cat] !== false) && val && val[0].toUpperCase() === letter) {
+                if (isWordValidByVote(p, cat) && val && val[0].toUpperCase() === letter) {
                     wordCounts[cat] = wordCounts[cat] || {};
                     wordCounts[cat][val] = (wordCounts[cat][val] || 0) + 1;
                 }
             }
         }
 
-        // 2. Asignar puntajes basados en la frecuencia
+        // 2. Asignar puntajes
         for (let p in data.answers) {
             let total = 0;
             let ind = {};
             for (let cat in data.answers[p].words) {
                 let val = data.answers[p].words[cat].toLowerCase().trim();
                 let pts = 0;
-                if ((data.evaluations?.[p]?.[cat] !== false) && val && val[0].toUpperCase() === letter) {
+                if (isWordValidByVote(p, cat) && val && val[0].toUpperCase() === letter) {
                     pts = (wordCounts[cat][val] > 1) ? 5 : 10;
                 }
                 ind[cat] = pts; total += pts;
